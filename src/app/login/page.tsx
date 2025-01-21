@@ -6,8 +6,11 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {GraduationCap} from "lucide-react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+    const router = useRouter();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -15,6 +18,21 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+
+        const result = await signIn("credentials", {
+            username,
+            password,
+            redirect: false,
+        });
+
+        if (result?.error) {
+            setError(result.error);
+            return;
+        }
+
+        // If successful, navigate to home (or wherever you want)
+        router.push("/admin/dashboard");
+
     };
 
     return (

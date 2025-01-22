@@ -1,5 +1,5 @@
 // app/api/auth/[...nextauth]/route.ts
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth, {NextAuthOptions} from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 export const authOptions: NextAuthOptions = {
@@ -11,8 +11,8 @@ export const authOptions: NextAuthOptions = {
         CredentialsProvider({
             name: "Credentials",
             credentials: {
-                username: { label: "Username", type: "text" },
-                password: { label: "Password", type: "password" },
+                username: {label: "Username", type: "text"},
+                password: {label: "Password", type: "password"},
             },
             async authorize(credentials) {
                 if (!credentials?.username || !credentials?.password) {
@@ -25,7 +25,7 @@ export const authOptions: NextAuthOptions = {
                         `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/auth/login/username`,
                         {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: {"Content-Type": "application/json"},
                             body: JSON.stringify({
                                 username: credentials.username,
                                 password: credentials.password,
@@ -34,8 +34,14 @@ export const authOptions: NextAuthOptions = {
                     );
 
                     if (!res.ok) {
-                        // If invalid login or server error
-                        return null;
+                        let errorData: any;
+                        try {
+                            errorData = await res.json();
+                        } catch {
+                            errorData = {message: "An unknown error occurred"};
+                        }
+
+                        throw new Error(errorData.message || "Failed to sign in");
                     }
 
                     // e.g.
@@ -66,15 +72,15 @@ export const authOptions: NextAuthOptions = {
                         accessToken: data.accessToken,
                         refreshToken: data.refreshToken,
                     };
-                } catch (error) {
+                } catch (error: any) {
                     console.error("Authorize error:", error);
-                    return null;
+                    throw new Error(error?.message || "Something went wrong");
                 }
             },
         }),
     ],
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({token, user}) {
             // If user is set, this is the first call after `authorize`
             if (user) {
                 token.user = {
@@ -92,7 +98,7 @@ export const authOptions: NextAuthOptions = {
             return token;
         },
 
-        async session({ session, token }) {
+        async session({session, token}) {
             // Copy data from token to session
             session.user = {
                 id: token.user.id,
@@ -113,4 +119,4 @@ export const authOptions: NextAuthOptions = {
 
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST };
+export {handler as GET, handler as POST};

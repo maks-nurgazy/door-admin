@@ -6,8 +6,8 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {GraduationCap} from "lucide-react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import {signIn} from "next-auth/react";
+import {useRouter} from "next/navigation";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -26,6 +26,7 @@ export default function LoginPage() {
         });
 
         if (result?.error) {
+            console.log(result.error);
             setError(result.error);
             return;
         }

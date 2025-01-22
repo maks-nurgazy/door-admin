@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {useState} from "react";
+import React, {useState} from "react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,6 +25,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {signOut, useSession} from "next-auth/react";
 
 const navigation = [
     {name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard},
@@ -43,6 +44,10 @@ export default function AdminLayout({
 }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const pathname = usePathname();
+    const { data: session } = useSession();
+
+    const firstName = session?.user?.firstName || "Guest";
+    const username = session?.user?.username || "";
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -65,20 +70,20 @@ export default function AdminLayout({
                     </div>
                     <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground hidden md:inline-block">
-              Welcome, max
+               Welcome, {firstName}
             </span>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative flex items-center gap-2">
                                     <User className="h-5 w-5"/>
-                                    <span className="md:hidden">max</span>
+                                    <span className="md:hidden">{firstName}</span>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
                                 <DropdownMenuLabel>
                                     <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">max</p>
-                                        <p className="text-xs leading-none text-muted-foreground">maksnurgazy</p>
+                                        <p className="text-sm font-medium leading-none">{firstName}</p>
+                                        <p className="text-xs leading-none text-muted-foreground">{username}</p>
                                     </div>
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator/>
@@ -87,7 +92,7 @@ export default function AdminLayout({
                                     <span>Profile</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-red-600" onClick={() => {
-                                    console.log("logout")
+                                    signOut();
                                 }}>
                                     <LogOut className="mr-2 h-4 w-4"/>
                                     <span>Log out</span>

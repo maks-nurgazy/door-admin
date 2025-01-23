@@ -1,41 +1,43 @@
-"use client";
+import {Suspense} from "react";
+import {UsersTable} from "./components/users-table";
+import {UsersHeader} from "./components/users-header";
+import {UsersFilters} from "./components/users-filters";
+import {usersApi} from "@/lib/api/users";
+import Loading from "@/app/admin/users/loading";
 
-import { Suspense, useState, useCallback } from "react";
-import { UsersTable } from "./components/users-table";
-import { UsersHeader } from "./components/users-header";
-import { UsersFilters } from "./components/users-filters";
-import { UserFilters } from "@/lib/api/users";
+interface PageProps {
+    searchParams: Promise<{
+        name?: string;
+        status?: string;
+        paymentStatus?: string;
+        page?: string;
+    }>;
+}
 
-export default function UsersPage() {
-    const [filters, setFilters] = useState<UserFilters>({});
+export default async function UsersPage({searchParams}: PageProps) {
+    // Parse search params
+    const parameters = await searchParams;
+    const filters = {
+        name: parameters.name,
+        status: parameters.status as any,
+        paymentStatus: parameters.paymentStatus as any,
+        page: parameters.page ? parseInt(parameters.page) - 1 : 0,
+    };
 
-    const handleFiltersChange = useCallback((newFilters: UserFilters) => {
-        setFilters(newFilters);
-
-        // Update URL with filters
-        const searchParams = new URLSearchParams(window.location.search);
-        Object.entries(newFilters).forEach(([key, value]) => {
-            if (value) {
-                searchParams.set(key, value);
-            } else {
-                searchParams.delete(key);
-            }
-        });
-        window.history.pushState(
-            {},
-            '',
-            `${window.location.pathname}?${searchParams.toString()}`
-        );
-    }, []);
+    const initialData = await usersApi.getUsers(filters);
 
     return (
         <div className="space-y-6">
             <UsersHeader />
-            <Suspense fallback={<div>Loading filters...</div>}>
-                <UsersFilters onFiltersChange={handleFiltersChange} />
+            <Suspense fallback={<div className="flex gap-4 flex-wrap">
+                <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md" />
+                <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md" />
+                <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md" />
+            </div>}>
+                <UsersFilters />
             </Suspense>
-            <Suspense fallback={<div>Loading users...</div>}>
-                <UsersTable filters={filters} />
+            <Suspense fallback={<Loading />}>
+                <UsersTable initialData={initialData} />
             </Suspense>
         </div>
     );

@@ -1,6 +1,7 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useState} from "react";
+import {useRouter, useSearchParams} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import {Dialog, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui/dialog";
@@ -9,16 +10,15 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {Ban, CheckCircle2, Pencil} from "lucide-react";
-import {User, UserFilters, usersApi, UsersResponse} from "@/lib/api/users";
+import {User, usersApi, UsersResponse} from "@/lib/api/users";
 
 interface UsersTableProps {
-    filters: UserFilters;
+    initialData: UsersResponse;
 }
 
-export function UsersTable({filters}: UsersTableProps) {
-    const [usersData, setUsersData] = useState<UsersResponse | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(0);
+export function UsersTable({initialData: usersData}: UsersTableProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editForm, setEditForm] = useState({
@@ -28,29 +28,20 @@ export function UsersTable({filters}: UsersTableProps) {
         phone: "",
     });
 
-    useEffect(() => {
-        fetchUsers();
-    }, [currentPage, filters]);
+    const currentPage = searchParams.get("page")
+        ? parseInt(searchParams.get("page")!) - 1
+        : 0;
 
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
-            const data = await usersApi.getUsers({
-                ...filters,
-                page: currentPage,
-            });
-            setUsersData(data);
-        } catch (error) {
-            console.error('Failed to fetch users:', error);
-        } finally {
-            setLoading(false);
-        }
+    const handlePageChange = (newPage: number) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("page", (newPage + 1).toString());
+        router.push(`?${params.toString()}`);
     };
 
     const handleStatusChange = async (userId: number, newStatus: string) => {
         try {
             await usersApi.updateUserStatus(userId, newStatus);
-            fetchUsers();
+            router.refresh();
         } catch (error) {
             console.error('Failed to update user status:', error);
         }
@@ -71,7 +62,7 @@ export function UsersTable({filters}: UsersTableProps) {
         if (selectedUser) {
             try {
                 await usersApi.updateUser(selectedUser.id, editForm);
-                fetchUsers();
+                router.refresh();
                 setIsEditDialogOpen(false);
                 setSelectedUser(null);
             } catch (error) {
@@ -97,18 +88,6 @@ export function UsersTable({filters}: UsersTableProps) {
             : <Badge variant="secondary">Unpaid</Badge>;
     };
 
-    if (loading) {
-        return (
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex items-center justify-center">
-                        <p>Loading users...</p>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-
     return (
         <Card>
             <CardHeader>
@@ -129,7 +108,7 @@ export function UsersTable({filters}: UsersTableProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {usersData?.data.map((user) => (
+                        {usersData.data.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">{`${user.firstName} ${user.lastName}`}</TableCell>
                                 <TableCell>{user.username}</TableCell>
@@ -173,11 +152,11 @@ export function UsersTable({filters}: UsersTableProps) {
                     </TableBody>
                 </Table>
 
-                {usersData && usersData.totalPages > 1 && (
+                {usersData.totalPages > 1 && (
                     <div className="flex justify-center gap-2 mt-4">
                         <Button
                             variant="outline"
-                            onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                            onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 0}
                         >
                             Previous
@@ -187,7 +166,7 @@ export function UsersTable({filters}: UsersTableProps) {
             </span>
                         <Button
                             variant="outline"
-                            onClick={() => setCurrentPage(p => Math.min(usersData.totalPages - 1, p + 1))}
+                            onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === usersData.totalPages - 1}
                         >
                             Next

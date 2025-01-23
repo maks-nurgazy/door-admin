@@ -1,34 +1,60 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { UserFilters } from "@/lib/api/users";
+import {useCallback, useEffect, useState, useTransition} from "react";
+import {useRouter, useSearchParams} from "next/navigation";
+import {Input} from "@/components/ui/input";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
 
-interface UsersFiltersProps {
-    onFiltersChange: (filters: UserFilters) => void;
-}
+export function UsersFilters() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const [isPending, startTransition] = useTransition();
 
-export function UsersFilters({ onFiltersChange }: UsersFiltersProps) {
-    const [name, setName] = useState("");
-    const [status, setStatus] = useState("all");
-    const [paymentStatus, setPaymentStatus] = useState("all");
+    const [name, setName] = useState(searchParams.get("name") || "");
+    const [status, setStatus] = useState(searchParams.get("status") || "all");
+    const [paymentStatus, setPaymentStatus] = useState(searchParams.get("paymentStatus") || "all");
 
+    const createQueryString = useCallback(
+        (params: Record<string, string | null>) => {
+            const newSearchParams = new URLSearchParams(searchParams.toString());
+
+            Object.entries(params).forEach(([key, value]) => {
+                if (value === null || value === "all") {
+                    newSearchParams.delete(key);
+                } else {
+                    newSearchParams.set(key, value);
+                }
+            });
+
+            // Reset page when filters change
+            if (Object.keys(params).some(key => key !== 'page')) {
+                newSearchParams.delete('page');
+            }
+
+            return newSearchParams.toString();
+        },
+        [searchParams]
+    );
+
+    const updateFilters = useCallback((params: Record<string, string | null>) => {
+        startTransition(() => {
+            const queryString = createQueryString(params);
+            router.push(`?${queryString}`);
+        });
+    }, [router, createQueryString]);
+
+    // Debounce name search
     useEffect(() => {
-        const filters: UserFilters = {};
+        const timeoutId = setTimeout(() => {
+            if (name) {
+                updateFilters({name});
+            } else {
+                updateFilters({name: null});
+            }
+        }, 300);
 
-        if (name) filters.name = name;
-        if (status !== "all") filters.status = status as UserFilters["status"];
-        if (paymentStatus !== "all") filters.paymentStatus = paymentStatus as UserFilters["paymentStatus"];
-
-        onFiltersChange(filters);
-    }, [name, status, paymentStatus, onFiltersChange]);
+        return () => clearTimeout(timeoutId);
+    }, [name, updateFilters]);
 
     return (
         <div className="flex gap-4 flex-wrap">
@@ -40,10 +66,13 @@ export function UsersFilters({ onFiltersChange }: UsersFiltersProps) {
             />
             <Select
                 value={status}
-                onValueChange={setStatus}
+                onValueChange={(value) => {
+                    setStatus(value);
+                    updateFilters({status: value});
+                }}
             >
                 <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder="Filter by status"/>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
@@ -54,10 +83,13 @@ export function UsersFilters({ onFiltersChange }: UsersFiltersProps) {
             </Select>
             <Select
                 value={paymentStatus}
-                onValueChange={setPaymentStatus}
+                onValueChange={(value) => {
+                    setPaymentStatus(value);
+                    updateFilters({paymentStatus: value});
+                }}
             >
                 <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by payment" />
+                    <SelectValue placeholder="Filter by payment"/>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Payments</SelectItem>

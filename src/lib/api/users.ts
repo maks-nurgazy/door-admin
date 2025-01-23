@@ -1,14 +1,4 @@
-import axios from 'axios';
-
-const API_URL = 'https://389d-5-59-231-14.ngrok-free.app/api/v1/admin';
-
-// Create axios instance with default config
-const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+import {api} from "@/lib/axios";
 
 export interface User {
     id: number;
@@ -59,7 +49,7 @@ export const usersApi = {
             }
 
             const queryString = searchParams.toString();
-            const url = `/users${queryString ? `?${queryString}` : ''}`;
+            const url = `/admin/users${queryString ? `?${queryString}` : ''}`;
 
             const response = await api.get(url);
             return response.data;
@@ -71,7 +61,7 @@ export const usersApi = {
 
     updateUser: async (id: number, userData: Partial<User>): Promise<User> => {
         try {
-            const response = await api.put(`/users/${id}`, userData);
+            const response = await api.put(`/admin/users/${id}`, userData);
             return response.data;
         } catch (error) {
             console.error('Failed to update user:', error);
@@ -81,7 +71,7 @@ export const usersApi = {
 
     updateUserStatus: async (id: number, status: string): Promise<User> => {
         try {
-            const response = await api.patch(`/users/${id}/status`, { status });
+            const response = await api.put(`/admin/users/${id}`, { status });
             return response.data;
         } catch (error) {
             console.error('Failed to update user status:', error);

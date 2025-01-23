@@ -2,12 +2,15 @@ import axios, {AxiosInstance} from 'axios';
 import {getServerSession} from "next-auth";
 import {authOptions} from "@/app/api/auth/[...nextauth]/route";
 
-export const axiosClient: AxiosInstance = axios.create({
+export const api: AxiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_SERVER_BASE_URL || '',
+    headers: {
+        'Content-Type': 'application/json',
+    },
     timeout: 10000,
 });
 
-axiosClient.interceptors.request.use(
+api.interceptors.request.use(
     async (config) => {
         // 1. Only run in the server environment
         //    (getServerSession won't work on the client)

@@ -11,6 +11,7 @@ import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {Ban, CheckCircle2, Pencil} from "lucide-react";
 import {User, usersApi, UsersResponse} from "@/lib/api/users";
+import { format } from "date-fns";
 
 interface UsersTableProps {
     initialData: UsersResponse;
@@ -114,7 +115,7 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                                 <TableCell>{user.username}</TableCell>
                                 <TableCell>{user.email || '-'}</TableCell>
                                 <TableCell>{user.phone}</TableCell>
-                                <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell>{format(new Date(user.createdAt), "MMM dd, yyyy")}</TableCell>
                                 <TableCell>{getStatusBadge(user.status)}</TableCell>
                                 <TableCell>{getPaymentBadge(user.paymentStatus)}</TableCell>
                                 <TableCell>

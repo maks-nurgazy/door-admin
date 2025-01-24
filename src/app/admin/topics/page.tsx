@@ -23,9 +23,11 @@ export default async function TopicsPage({searchParams}: PageProps) {
     return (
         <div className="space-y-6">
             <TopicsHeader/>
-            <Suspense fallback={<div className="flex gap-4">
-                <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md"/>
-            </div>}>
+            <Suspense fallback={
+                <div className="flex gap-4">
+                    <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md"/>
+                </div>
+            }>
                 <TopicsFilters/>
             </Suspense>
             <Suspense fallback={<Loading/>}>

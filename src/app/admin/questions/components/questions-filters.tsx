@@ -3,16 +3,14 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { Section, sectionsApi } from "@/lib/api/sections";
-import { Topic, topicsApi } from "@/lib/api/topics";
-import { Combobox, ComboboxItem } from "@/components/ui/combobox";
+import { Combobox } from "@/components/ui/combobox";
 
 interface QuestionsFiltersProps {
-    sections: Section[];
-    topics: Topic[];
+    sections: { id: number; title: string; }[];
+    topics: { id: number; title: string; }[];
 }
 
-export function QuestionsFilters({ sections: initialSections, topics: initialTopics }: QuestionsFiltersProps) {
+export function QuestionsFilters({ sections, topics }: QuestionsFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
@@ -20,20 +18,6 @@ export function QuestionsFilters({ sections: initialSections, topics: initialTop
     const [search, setSearch] = useState(searchParams.get("search") || "");
     const [section, setSection] = useState(searchParams.get("section") || "all");
     const [topic, setTopic] = useState(searchParams.get("topic") || "all");
-
-    // State for sections
-    const [sections, setSections] = useState<Section[]>(initialSections || []);
-    const [sectionsPage, setSectionsPage] = useState(0);
-    const [hasMoreSections, setHasMoreSections] = useState(true);
-    const [loadingSections, setLoadingSections] = useState(false);
-    const [sectionSearch, setSectionSearch] = useState("");
-
-    // State for topics
-    const [topics, setTopics] = useState<Topic[]>(initialTopics || []);
-    const [topicsPage, setTopicsPage] = useState(0);
-    const [hasMoreTopics, setHasMoreTopics] = useState(true);
-    const [loadingTopics, setLoadingTopics] = useState(false);
-    const [topicSearch, setTopicSearch] = useState("");
 
     const updateFilters = useCallback(
         (params: Record<string, string | null>) => {
@@ -69,94 +53,6 @@ export function QuestionsFilters({ sections: initialSections, topics: initialTop
         [router, searchParams]
     );
 
-    // Load more sections
-    const loadMoreSections = useCallback(async () => {
-        if (!hasMoreSections || loadingSections) return;
-
-        setLoadingSections(true);
-        try {
-            const response = await sectionsApi.getSections({
-                page: sectionsPage + 1,
-                search: sectionSearch,
-                size: 10
-            });
-
-            if (response.data.length > 0) {
-                setSections(prev => [...prev, ...response.data]);
-                setSectionsPage(prev => prev + 1);
-            }
-            setHasMoreSections(response.currentPage < response.totalPages - 1);
-        } catch (error) {
-            console.error('Failed to load more sections:', error);
-        } finally {
-            setLoadingSections(false);
-        }
-    }, [sectionsPage, sectionSearch, hasMoreSections, loadingSections]);
-
-    // Load more topics
-    const loadMoreTopics = useCallback(async () => {
-        if (!hasMoreTopics || loadingTopics) return;
-
-        setLoadingTopics(true);
-        try {
-            const response = await topicsApi.getTopics({
-                page: topicsPage + 1,
-                search: topicSearch,
-                size: 10
-            });
-
-            if (response.data.length > 0) {
-                setTopics(prev => [...prev, ...response.data]);
-                setTopicsPage(prev => prev + 1);
-            }
-            setHasMoreTopics(response.currentPage < response.totalPages - 1);
-        } catch (error) {
-            console.error('Failed to load more topics:', error);
-        } finally {
-            setLoadingTopics(false);
-        }
-    }, [topicsPage, topicSearch, hasMoreTopics, loadingTopics]);
-
-    // Handle section search
-    const handleSectionSearch = useCallback(async (value: string) => {
-        setSectionSearch(value);
-        setLoadingSections(true);
-        try {
-            const response = await sectionsApi.getSections({
-                search: value,
-                page: 0,
-                size: 10
-            });
-            setSections(response.data);
-            setSectionsPage(0);
-            setHasMoreSections(response.currentPage < response.totalPages - 1);
-        } catch (error) {
-            console.error('Failed to search sections:', error);
-        } finally {
-            setLoadingSections(false);
-        }
-    }, []);
-
-    // Handle topic search
-    const handleTopicSearch = useCallback(async (value: string) => {
-        setTopicSearch(value);
-        setLoadingTopics(true);
-        try {
-            const response = await topicsApi.getTopics({
-                search: value,
-                page: 0,
-                size: 10
-            });
-            setTopics(response.data);
-            setTopicsPage(0);
-            setHasMoreTopics(response.currentPage < response.totalPages - 1);
-        } catch (error) {
-            console.error('Failed to search topics:', error);
-        } finally {
-            setLoadingTopics(false);
-        }
-    }, []);
-
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (search) {
@@ -169,18 +65,18 @@ export function QuestionsFilters({ sections: initialSections, topics: initialTop
         return () => clearTimeout(timeoutId);
     }, [search, updateFilters]);
 
-    const sectionsItems: ComboboxItem[] = [
+    const sectionsItems = [
         { value: "all", label: "All Sections" },
-        ...(sections || []).map(section => ({
-            value: section.title,
+        ...sections.map(section => ({
+            value: section.id.toString(),
             label: section.title
         }))
     ];
 
-    const topicsItems: ComboboxItem[] = [
+    const topicsItems = [
         { value: "all", label: "All Topics" },
-        ...(topics || []).map(topic => ({
-            value: topic.title,
+        ...topics.map(topic => ({
+            value: topic.id.toString(),
             label: topic.title
         }))
     ];
@@ -201,10 +97,6 @@ export function QuestionsFilters({ sections: initialSections, topics: initialTop
                     updateFilters({ section: value });
                 }}
                 placeholder="Filter by section"
-                searchPlaceholder="Search sections..."
-                onSearch={handleSectionSearch}
-                onScrollEnd={loadMoreSections}
-                loading={loadingSections}
                 className="w-[200px]"
             />
             <Combobox
@@ -215,10 +107,6 @@ export function QuestionsFilters({ sections: initialSections, topics: initialTop
                     updateFilters({ topic: value });
                 }}
                 placeholder="Filter by topic"
-                searchPlaceholder="Search topics..."
-                onSearch={handleTopicSearch}
-                onScrollEnd={loadMoreTopics}
-                loading={loadingTopics}
                 className="w-[200px]"
             />
         </div>

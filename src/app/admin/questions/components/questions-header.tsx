@@ -32,31 +32,28 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-import { Section } from "@/lib/api/sections";
-import { Topic } from "@/lib/api/topics";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Checkbox } from "@/components/ui/checkbox";
+
+interface QuestionsHeaderProps {
+    sections: { id: number; title: string; }[];
+    topics: { id: number; title: string; }[];
+}
 
 const questionSchema = z.object({
     text: z.string().min(3, "Question text must be at least 3 characters"),
     type: z.enum(["TEXT", "IMAGE"]),
-    options: z.array(z.string()).min(4, "All 4 options are required"),
-    answerKey: z.number().min(1).max(4),
-    imageUrl: z.string().nullable().optional(),
-    topicIds: z.array(z.number()).min(1, "At least one topic is required"),
+    options: z.array(z.object({
+        key: z.number(),
+        text: z.string().min(1, "Option text is required")
+    })).min(2, "At least 2 options are required"),
+    answerKey: z.number().min(1, "Correct answer is required"),
+    imageUrl: z.string().optional(),
+    topicIds: z.array(z.number()).min(1, "At least one topic is required")
 });
 
 type QuestionFormValues = z.infer<typeof questionSchema>;
 
-interface QuestionsHeaderProps {
-    sections: Section[];
-    topics: Topic[];
-}
-
 export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
     const router = useRouter();
 
     const form = useForm<QuestionFormValues>({
@@ -64,46 +61,25 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
         defaultValues: {
             text: "",
             type: "TEXT",
-            options: ["", "", "", ""],
-            answerKey: 1,
-            imageUrl: null,
+            options: [
+                { key: 1, text: "" },
+                { key: 2, text: "" },
+                { key: 3, text: "" },
+                { key: 4, text: "" }
+            ],
             topicIds: [],
         },
     });
 
     const onSubmit = async (data: QuestionFormValues) => {
         try {
-            // Transform options array into required format with keys
-            const formattedOptions = data.options.map((text, index) => ({
-                key: index + 1,
-                text: text.trim()
-            }));
-
-            const questionData = {
-                text: data.text,
-                type: data.type,
-                options: formattedOptions,
-                answerKey: data.answerKey,
-                imageUrl: data.type === "IMAGE" ? data.imageUrl : null,
-                topicIds: selectedTopics,
-            };
-
-            await questionsApi.createQuestion(questionData);
+            await questionsApi.createQuestion(data);
             setIsAddDialogOpen(false);
             form.reset();
-            setSelectedTopics([]);
             router.refresh();
         } catch (error) {
             console.error('Failed to create question:', error);
         }
-    };
-
-    const toggleTopic = (topicId: number) => {
-        setSelectedTopics(prev =>
-            prev.includes(topicId)
-                ? prev.filter(id => id !== topicId)
-                : [...prev, topicId]
-        );
     };
 
     return (
@@ -166,39 +142,33 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
                                     )}
                                 />
 
-                                <div>
-                                    <Label>Topics</Label>
-                                    <ScrollArea className="h-[200px] border rounded-md p-4 mt-2">
-                                        <div className="space-y-2">
-                                            {topics.map((topic) => (
-                                                <div key={topic.id} className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        checked={selectedTopics.includes(topic.id)}
-                                                        onCheckedChange={() => toggleTopic(topic.id)}
-                                                    />
-                                                    <Label className="text-sm font-normal">{topic.title}</Label>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </ScrollArea>
-                                    {selectedTopics.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                            {selectedTopics.map((topicId) => {
-                                                const topic = topics.find(t => t.id === topicId);
-                                                return topic ? (
-                                                    <Badge key={topic.id} variant="secondary">
-                                                        {topic.title}
-                                                    </Badge>
-                                                ) : null;
-                                            })}
-                                        </div>
+                                <FormField
+                                    control={form.control}
+                                    name="topicIds"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Topics</FormLabel>
+                                            <Select
+                                                value={field.value.toString()}
+                                                onValueChange={(value) => field.onChange([parseInt(value)])}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {topics.map((topic) => (
+                                                        <SelectItem key={topic.id} value={topic.id.toString()}>
+                                                            {topic.title}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
-                                    {form.formState.errors.topicIds && (
-                                        <p className="text-sm font-medium text-destructive mt-2">
-                                            {form.formState.errors.topicIds.message}
-                                        </p>
-                                    )}
-                                </div>
+                                />
 
                                 <div className="space-y-2">
                                     <Label>Options</Label>
@@ -207,7 +177,7 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
                                             <FormField
                                                 key={index}
                                                 control={form.control}
-                                                name={`options.${index}`}
+                                                name={`options.${index}.text`}
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormControl>
@@ -215,7 +185,7 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
                                 <span className="py-2 w-6">
                                   {String.fromCharCode(65 + index)}
                                 </span>
-                                                                <Input {...field} placeholder={`Option ${index + 1}`} />
+                                                                <Input {...field} />
                                                             </div>
                                                         </FormControl>
                                                     </FormItem>
@@ -232,7 +202,7 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
                                         <FormItem>
                                             <FormLabel>Correct Answer</FormLabel>
                                             <Select
-                                                value={field.value.toString()}
+                                                value={field.value?.toString()}
                                                 onValueChange={(value) => field.onChange(parseInt(value))}
                                             >
                                                 <FormControl>
@@ -241,11 +211,17 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {form.watch("options").map((option, index) => (
-                                                        <SelectItem key={index + 1} value={(index + 1).toString()}>
-                                                            {`${String.fromCharCode(65 + index)}: ${option || `Option ${index + 1}`}`}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {form.watch("options")
+                                                        .map((option, index) => ({
+                                                            key: index + 1,
+                                                            text: option.text
+                                                        }))
+                                                        .filter(option => option.text.trim() !== '')
+                                                        .map((option) => (
+                                                            <SelectItem key={option.key} value={option.key.toString()}>
+                                                                {`${String.fromCharCode(64 + option.key)}: ${option.text}`}
+                                                            </SelectItem>
+                                                        ))}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -276,7 +252,6 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
                                         onClick={() => {
                                             setIsAddDialogOpen(false);
                                             form.reset();
-                                            setSelectedTopics([]);
                                         }}
                                     >
                                         Cancel

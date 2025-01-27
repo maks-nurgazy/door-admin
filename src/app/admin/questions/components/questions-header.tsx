@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload, Check } from "lucide-react";
 import {
@@ -77,6 +77,11 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
         },
     });
 
+    // Update form value when selectedTopics changes
+    useEffect(() => {
+        form.setValue('topicIds', selectedTopics, { shouldValidate: true });
+    }, [selectedTopics, form]);
+
     const onSubmit = async (data: QuestionFormValues) => {
         try {
             await questionsApi.createQuestion({
@@ -93,13 +98,11 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
     };
 
     const toggleTopic = (topicId: number) => {
-        setSelectedTopics(prev => {
-            const newTopics = prev.includes(topicId)
+        setSelectedTopics(prev =>
+            prev.includes(topicId)
                 ? prev.filter(id => id !== topicId)
-                : [...prev, topicId];
-            form.setValue('topicIds', newTopics);
-            return newTopics;
-        });
+                : [...prev, topicId]
+        );
     };
 
     const filteredTopics = topics.filter(topic =>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, Check } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -32,6 +32,9 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface QuestionsHeaderProps {
     sections: { id: number; title: string; }[];
@@ -54,6 +57,9 @@ type QuestionFormValues = z.infer<typeof questionSchema>;
 
 export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
+    const [isTopicsOpen, setIsTopicsOpen] = useState(false);
+    const [topicSearch, setTopicSearch] = useState("");
     const router = useRouter();
 
     const form = useForm<QuestionFormValues>({
@@ -73,14 +79,32 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
 
     const onSubmit = async (data: QuestionFormValues) => {
         try {
-            await questionsApi.createQuestion(data);
+            await questionsApi.createQuestion({
+                ...data,
+                topicIds: selectedTopics
+            });
             setIsAddDialogOpen(false);
             form.reset();
+            setSelectedTopics([]);
             router.refresh();
         } catch (error) {
             console.error('Failed to create question:', error);
         }
     };
+
+    const toggleTopic = (topicId: number) => {
+        setSelectedTopics(prev => {
+            const newTopics = prev.includes(topicId)
+                ? prev.filter(id => id !== topicId)
+                : [...prev, topicId];
+            form.setValue('topicIds', newTopics);
+            return newTopics;
+        });
+    };
+
+    const filteredTopics = topics.filter(topic =>
+        topic.title.toLowerCase().includes(topicSearch.toLowerCase())
+    );
 
     return (
         <div className="flex justify-between items-center">
@@ -148,23 +172,88 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Topics</FormLabel>
-                                            <Select
-                                                value={field.value.toString()}
-                                                onValueChange={(value) => field.onChange([parseInt(value)])}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {topics.map((topic) => (
-                                                        <SelectItem key={topic.id} value={topic.id.toString()}>
-                                                            {topic.title}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <div className="relative">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={isTopicsOpen}
+                                                    className="w-full justify-between"
+                                                    onClick={() => setIsTopicsOpen(!isTopicsOpen)}
+                                                >
+                          <span className={selectedTopics.length === 0 ? "text-muted-foreground" : undefined}>
+                            {selectedTopics.length > 0
+                                ? `${selectedTopics.length} topic${selectedTopics.length === 1 ? "" : "s"} selected`
+                                : "Select topics"}
+                          </span>
+                                                    <Plus className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                                {isTopicsOpen && (
+                                                    <div className="absolute z-10 w-full mt-2 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+                                                        <div className="p-2">
+                                                            <Input
+                                                                placeholder="Search topics..."
+                                                                value={topicSearch}
+                                                                onChange={(e) => setTopicSearch(e.target.value)}
+                                                                className="h-8"
+                                                            />
+                                                        </div>
+                                                        <ScrollArea className="h-[200px]">
+                                                            <div className="p-2">
+                                                                {filteredTopics.length === 0 ? (
+                                                                    <p className="text-sm text-center py-6 text-muted-foreground">
+                                                                        No topics found
+                                                                    </p>
+                                                                ) : (
+                                                                    filteredTopics.map((topic) => (
+                                                                        <div
+                                                                            key={topic.id}
+                                                                            className={cn(
+                                                                                "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                                                                                selectedTopics.includes(topic.id) && "bg-accent"
+                                                                            )}
+                                                                            onClick={() => toggleTopic(topic.id)}
+                                                                        >
+                                                                            <Check
+                                                                                className={cn(
+                                                                                    "mr-2 h-4 w-4",
+                                                                                    selectedTopics.includes(topic.id) ? "opacity-100" : "opacity-0"
+                                                                                )}
+                                                                            />
+                                                                            <span>{topic.title}</span>
+                                                                        </div>
+                                                                    ))
+                                                                )}
+                                                            </div>
+                                                        </ScrollArea>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {selectedTopics.length > 0 && (
+                                                <div className="flex gap-1 flex-wrap mt-2">
+                                                    {selectedTopics.map((topicId) => {
+                                                        const topic = topics.find((t) => t.id === topicId);
+                                                        return topic ? (
+                                                            <Badge
+                                                                key={topic.id}
+                                                                variant="secondary"
+                                                                className="mr-1"
+                                                            >
+                                                                {topic.title}
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-4 w-4 ml-1 hover:bg-transparent"
+                                                                    onClick={() => toggleTopic(topic.id)}
+                                                                >
+                                                                    <Plus className="h-3 w-3 rotate-45" />
+                                                                </Button>
+                                                            </Badge>
+                                                        ) : null;
+                                                    })}
+                                                </div>
+                                            )}
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -252,6 +341,7 @@ export function QuestionsHeader({ sections, topics }: QuestionsHeaderProps) {
                                         onClick={() => {
                                             setIsAddDialogOpen(false);
                                             form.reset();
+                                            setSelectedTopics([]);
                                         }}
                                     >
                                         Cancel

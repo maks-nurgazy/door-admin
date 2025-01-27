@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
     Table,
     TableBody,
@@ -35,14 +45,32 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const [questionsData, setQuestionsData] = useState(initialData);
     const [isLoading, setIsLoading] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
 
     const currentPage = searchParams.get("page")
         ? parseInt(searchParams.get("page")!) - 1
         : 0;
+
+    const refreshData = async () => {
+        setIsLoading(true);
+        try {
+            const filters = {
+                search: searchParams.get("search") || undefined,
+                page: currentPage,
+            };
+            const updatedData = await questionsApi.getQuestions(filters);
+            setQuestionsData(updatedData);
+        } catch (error) {
+            console.error('Failed to refresh questions:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handlePageChange = async (newPage: number) => {
         setIsLoading(true);
@@ -65,16 +93,27 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
         setIsEditDialogOpen(true);
     };
 
-    const handleDelete = async (id: number) => {
-        if (confirm("Are you sure you want to delete this question?")) {
-            try {
-                await questionsApi.deleteQuestion(id);
-                router.refresh();
-            } catch (error) {
-                console.error('Failed to delete question:', error);
-            }
+    const handleDelete = (question: Question) => {
+        setSelectedQuestion(question);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!selectedQuestion) return;
+
+        try {
+            await questionsApi.deleteQuestion(selectedQuestion.id);
+            setIsDeleteDialogOpen(false);
+            setSelectedQuestion(null);
+            await refreshData(); // Refresh data after successful deletion
+        } catch (error) {
+            console.error('Failed to delete question:', error);
         }
     };
+
+    useEffect(() => {
+        setQuestionsData(initialData);
+    }, [initialData]);
 
     return (
         <Card>
@@ -110,7 +149,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                 </TableRow>
                             ))
                         ) : (
-                            initialData.data.map((question) => (
+                            questionsData.data.map((question) => (
                                 <TableRow key={question.id}>
                                     <TableCell className="font-medium max-w-md">
                                         <div className="truncate">{question.text}</div>
@@ -147,7 +186,8 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleDelete(question.id)}
+                                                onClick={() => handleDelete(question)}
+                                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -159,7 +199,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                     </TableBody>
                 </Table>
 
-                {initialData.totalPages > 1 && (
+                {questionsData.totalPages > 1 && (
                     <div className="flex justify-center gap-2 mt-4">
                         <Button
                             variant="outline"
@@ -169,19 +209,18 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                             Previous
                         </Button>
                         <span className="py-2 px-4">
-              Page {currentPage + 1} of {initialData.totalPages}
+              Page {currentPage + 1} of {questionsData.totalPages}
             </span>
                         <Button
                             variant="outline"
                             onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === initialData.totalPages - 1}
+                            disabled={currentPage === questionsData.totalPages - 1}
                         >
                             Next
                         </Button>
                     </div>
                 )}
 
-                {/* View Question Dialog */}
                 <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
                     <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
@@ -247,7 +286,6 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                     </DialogContent>
                 </Dialog>
 
-                {/* Edit Question Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
@@ -266,13 +304,42 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                     onSuccess={() => {
                                         setIsEditDialogOpen(false);
                                         setSelectedQuestion(null);
-                                        router.refresh();
+                                        refreshData();
                                     }}
                                 />
                             )}
                         </div>
                     </DialogContent>
                 </Dialog>
+
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Question</AlertDialogTitle>
+                            <div className="text-sm text-muted-foreground">
+                                Are you sure you want to delete this question? This action cannot be undone.
+                            </div>
+                        </AlertDialogHeader>
+                        {selectedQuestion && (
+                            <div className="mt-4 p-4 rounded-lg bg-muted">
+                                <div className="text-sm font-medium">
+                                    {selectedQuestion.text}
+                                </div>
+                            </div>
+                        )}
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setSelectedQuestion(null)}>
+                                Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={confirmDelete}
+                                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            >
+                                Delete Question
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardContent>
         </Card>
     );

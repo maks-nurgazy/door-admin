@@ -7,6 +7,11 @@ export interface Topic {
     sections: any[];
 }
 
+export interface TopicShortDto {
+    id: number;
+    title: string;
+}
+
 export interface TopicsResponse {
     data: Topic[];
     currentPage: number;
@@ -56,6 +61,24 @@ export const topicsApi = {
                 }
             }
             throw new Error('Failed to fetch topics data');
+        }
+    },
+
+    getAllTopics: async (): Promise<TopicShortDto[]> => {
+        try {
+            const url = `/admin/topics/all`;
+
+            const response = await api.get(url);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    throw new Error(`Server error: ${error.response.data?.message || error.message}`);
+                } else if (error.request) {
+                    throw new Error('No response received from server. Please check your connection.');
+                }
+            }
+            throw new Error('Failed to fetch all topics');
         }
     },
 

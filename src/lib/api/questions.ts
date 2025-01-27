@@ -81,6 +81,7 @@ export const questionsApi = {
 
     createQuestion: async (question: CreateQuestionDto): Promise<Question> => {
         try {
+            console.log(question);
             const response = await api.post('/admin/questions', question);
             return response.data;
         } catch (error) {

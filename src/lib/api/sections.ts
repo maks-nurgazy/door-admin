@@ -8,6 +8,11 @@ export interface Section {
     numberOfQuestions: number;
 }
 
+export interface SectionShortDto {
+    id: number;
+    title: string;
+}
+
 export interface SectionsResponse {
     data: Section[];
     currentPage: number;
@@ -51,6 +56,24 @@ export const sectionsApi = {
 
             const queryString = searchQueries.join('&');
             const url = `/admin/sections${queryString ? `?${queryString}` : ''}`;
+
+            const response = await api.get(url);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    throw new Error(`Server error: ${error.response.data?.message || error.message}`);
+                } else if (error.request) {
+                    throw new Error('No response received from server. Please check your connection.');
+                }
+            }
+            throw new Error('Failed to fetch sections data');
+        }
+    },
+
+    getAllSections: async (): Promise<SectionShortDto[]> => {
+        try {
+            const url = `/admin/sections/all`;
 
             const response = await api.get(url);
             return response.data;

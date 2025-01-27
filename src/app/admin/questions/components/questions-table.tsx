@@ -5,6 +5,12 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
     Table,
     TableBody,
     TableCell,
@@ -13,29 +19,12 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, Eye } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Question, QuestionsResponse, questionsApi } from "@/lib/api/questions";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { TopicShortDto } from "@/lib/api/topics";
 import { QuestionsHeader } from "./questions-header";
-import {TopicShortDto} from "@/lib/api/topics";
 
 interface QuestionsTableProps {
     initialData: QuestionsResponse;
@@ -47,9 +36,8 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
-    const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
 
     const currentPage = searchParams.get("page")
@@ -77,22 +65,14 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
         setIsEditDialogOpen(true);
     };
 
-    const handleDelete = (question: Question) => {
-        setSelectedQuestion(question);
-        setIsDeleteDialogOpen(true);
-    };
-
-    const confirmDelete = async () => {
-        if (!selectedQuestion) return;
-
-        try {
-            await questionsApi.deleteQuestion(selectedQuestion.id);
-            router.refresh();
-        } catch (error) {
-            console.error('Failed to delete question:', error);
-        } finally {
-            setIsDeleteDialogOpen(false);
-            setSelectedQuestion(null);
+    const handleDelete = async (id: number) => {
+        if (confirm("Are you sure you want to delete this question?")) {
+            try {
+                await questionsApi.deleteQuestion(id);
+                router.refresh();
+            } catch (error) {
+                console.error('Failed to delete question:', error);
+            }
         }
     };
 
@@ -147,7 +127,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                             ))}
                                         </div>
                                     </TableCell>
-                                    <TableCell>{format(new Date(question.createdAt), "MMM dd, yyyy")}</TableCell>
+                                    <TableCell>{new Date(question.createdAt).toLocaleDateString()}</TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
                                             <Button
@@ -167,7 +147,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleDelete(question)}
+                                                onClick={() => handleDelete(question.id)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -189,8 +169,8 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                             Previous
                         </Button>
                         <span className="py-2 px-4">
-                            Page {currentPage + 1} of {initialData.totalPages}
-                        </span>
+              Page {currentPage + 1} of {initialData.totalPages}
+            </span>
                         <Button
                             variant="outline"
                             onClick={() => handlePageChange(currentPage + 1)}
@@ -203,115 +183,96 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
 
                 {/* View Question Dialog */}
                 <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                    <DialogContent className="max-w-3xl">
+                    <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Question Details</DialogTitle>
                         </DialogHeader>
-                        {selectedQuestion && (
-                            <div className="space-y-4">
-                                <div>
-                                    <Label className="text-sm text-muted-foreground">Question Text</Label>
-                                    <p className="text-lg font-medium">{selectedQuestion.text}</p>
-                                </div>
-                                {selectedQuestion.imageUrl && (
-                                    <div>
-                                        <Label className="text-sm text-muted-foreground">Question Image</Label>
-                                        <img
-                                            src={selectedQuestion.imageUrl}
-                                            alt="Question"
-                                            className="mt-2 max-h-40 object-contain rounded-lg border"
-                                        />
-                                    </div>
-                                )}
-                                <div>
-                                    <Label className="text-sm text-muted-foreground">Topics</Label>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                        {selectedQuestion.topics.map((topic) => (
-                                            <Badge key={topic.id} variant="secondary">
-                                                {topic.title}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label className="text-sm text-muted-foreground">Created At</Label>
-                                    <p className="font-medium">
-                                        {format(new Date(selectedQuestion.createdAt), "MMM dd, yyyy")}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label className="text-sm text-muted-foreground">Options</Label>
-                                    <div className="grid grid-cols-2 gap-2 mt-2">
-                                        {selectedQuestion.options.map((option) => (
-                                            <div
-                                                key={option.key}
-                                                className={`p-2 rounded-lg border ${
-                                                    option.key === selectedQuestion.answerKey
-                                                        ? "border-green-500 bg-green-50"
-                                                        : ""
-                                                }`}
-                                            >
-                                                <span className="font-semibold mr-2">
-                                                    {String.fromCharCode(64 + option.key)}:
-                                                </span>
-                                                {option.text}
+                        <ScrollArea className="flex-1">
+                            <div className="space-y-4 p-4">
+                                {selectedQuestion && (
+                                    <>
+                                        <div>
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Question Text</h3>
+                                            <p className="text-lg">{selectedQuestion.text}</p>
+                                        </div>
+
+                                        {selectedQuestion.imageUrl && (
+                                            <div>
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Question Image</h3>
+                                                <div className="relative h-40 rounded-lg border overflow-hidden">
+                                                    <img
+                                                        src={selectedQuestion.imageUrl}
+                                                        alt="Question"
+                                                        className="absolute inset-0 w-full h-full object-contain"
+                                                    />
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
+                                        )}
+
+                                        <div>
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Topics</h3>
+                                            <div className="flex flex-wrap gap-1">
+                                                {selectedQuestion.topics.map((topic) => (
+                                                    <Badge key={topic.id} variant="secondary">
+                                                        {topic.title}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Options</h3>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {selectedQuestion.options.map((option) => (
+                                                    <div
+                                                        key={option.key}
+                                                        className={`p-2 rounded-lg border ${
+                                                            option.key === selectedQuestion.answerKey
+                                                                ? "border-green-500 bg-green-50"
+                                                                : ""
+                                                        }`}
+                                                    >
+                            <span className="font-semibold mr-2">
+                              {String.fromCharCode(64 + option.key)}:
+                            </span>
+                                                        {option.text}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                        )}
+                        </ScrollArea>
                     </DialogContent>
                 </Dialog>
 
                 {/* Edit Question Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Edit Question</DialogTitle>
                         </DialogHeader>
-                        {selectedQuestion && (
-                            <QuestionsHeader
-                                mode="edit"
-                                question={selectedQuestion}
-                                topics={topics}
-                                onClose={() => {
-                                    setIsEditDialogOpen(false);
-                                    setSelectedQuestion(null);
-                                }}
-                                onSuccess={() => {
-                                    setIsEditDialogOpen(false);
-                                    setSelectedQuestion(null);
-                                    router.refresh();
-                                }}
-                            />
-                        )}
+                        <div className="flex-1 overflow-y-auto px-1">
+                            {selectedQuestion && (
+                                <QuestionsHeader
+                                    mode="edit"
+                                    question={selectedQuestion}
+                                    topics={topics}
+                                    onClose={() => {
+                                        setIsEditDialogOpen(false);
+                                        setSelectedQuestion(null);
+                                    }}
+                                    onSuccess={() => {
+                                        setIsEditDialogOpen(false);
+                                        setSelectedQuestion(null);
+                                        router.refresh();
+                                    }}
+                                />
+                            )}
+                        </div>
                     </DialogContent>
                 </Dialog>
-
-                {/* Delete Confirmation Dialog */}
-                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this question
-                                and remove it from our servers.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setSelectedQuestion(null)}>
-                                Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={confirmDelete}
-                                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                            >
-                                Delete Question
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </CardContent>
         </Card>
     );

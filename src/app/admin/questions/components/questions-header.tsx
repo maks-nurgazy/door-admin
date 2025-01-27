@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { Question, questionsApi } from "@/lib/api/questions";
 import { TopicShortDto } from "@/lib/api/topics";
 import { QuestionForm, QuestionFormValues } from "./question-form";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface QuestionsHeaderProps {
     mode?: 'create' | 'edit';
@@ -69,15 +70,17 @@ export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess,
                             Add Question
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Add New Question</DialogTitle>
                         </DialogHeader>
-                        <QuestionForm
-                            topics={topics}
-                            onSubmit={handleSubmit}
-                            onCancel={() => setIsAddDialogOpen(false)}
-                        />
+                        <div className="flex-1 overflow-y-auto px-1">
+                            <QuestionForm
+                                topics={topics}
+                                onSubmit={handleSubmit}
+                                onCancel={() => setIsAddDialogOpen(false)}
+                            />
+                        </div>
                     </DialogContent>
                 </Dialog>
             </div>

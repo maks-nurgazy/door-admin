@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,6 +19,20 @@ interface TopicSelectorProps {
 export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange }: TopicSelectorProps) {
     const [isTopicsOpen, setIsTopicsOpen] = useState(false);
     const [topicSearch, setTopicSearch] = useState("");
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsTopicsOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     const toggleTopic = (topicId: number) => {
         const newTopics = selectedTopics.includes(topicId)
@@ -35,7 +49,7 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
 
     return (
         <div className="space-y-2">
-            <div className="relative">
+            <div className="relative" ref={containerRef}>
                 <Button
                     type="button"
                     variant="outline"
@@ -59,6 +73,7 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
                                 value={topicSearch}
                                 onChange={(e) => setTopicSearch(e.target.value)}
                                 className="h-8"
+                                onClick={(e) => e.stopPropagation()}
                             />
                         </div>
                         <ScrollArea className="h-[200px]">
@@ -75,7 +90,10 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
                                                 "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
                                                 selectedTopics.includes(topic.id) && "bg-accent"
                                             )}
-                                            onClick={() => toggleTopic(topic.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleTopic(topic.id);
+                                            }}
                                         >
                                             <Check
                                                 className={cn(
@@ -108,7 +126,10 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
                                     variant="ghost"
                                     size="icon"
                                     className="h-4 w-4 ml-1 hover:bg-transparent"
-                                    onClick={() => toggleTopic(topic.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleTopic(topic.id);
+                                    }}
                                 >
                                     <Plus className="h-3 w-3 rotate-45" />
                                 </Button>

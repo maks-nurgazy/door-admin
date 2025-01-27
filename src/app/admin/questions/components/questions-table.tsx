@@ -33,18 +33,22 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import {format} from "date-fns";
+import { format } from "date-fns";
+import { QuestionsHeader } from "./questions-header";
+import {TopicShortDto} from "@/lib/api/topics";
 
 interface QuestionsTableProps {
     initialData: QuestionsResponse;
+    topics: TopicShortDto[];
 }
 
-export function QuestionsTable({ initialData }: QuestionsTableProps) {
+export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
 
@@ -66,6 +70,11 @@ export function QuestionsTable({ initialData }: QuestionsTableProps) {
     const handleView = (question: Question) => {
         setSelectedQuestion(question);
         setIsViewDialogOpen(true);
+    };
+
+    const handleEdit = (question: Question) => {
+        setSelectedQuestion(question);
+        setIsEditDialogOpen(true);
     };
 
     const handleDelete = (question: Question) => {
@@ -151,6 +160,7 @@ export function QuestionsTable({ initialData }: QuestionsTableProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
+                                                onClick={() => handleEdit(question)}
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
@@ -179,8 +189,8 @@ export function QuestionsTable({ initialData }: QuestionsTableProps) {
                             Previous
                         </Button>
                         <span className="py-2 px-4">
-              Page {currentPage + 1} of {initialData.totalPages}
-            </span>
+                            Page {currentPage + 1} of {initialData.totalPages}
+                        </span>
                         <Button
                             variant="outline"
                             onClick={() => handlePageChange(currentPage + 1)}
@@ -241,15 +251,40 @@ export function QuestionsTable({ initialData }: QuestionsTableProps) {
                                                         : ""
                                                 }`}
                                             >
-                        <span className="font-semibold mr-2">
-                          {String.fromCharCode(64 + option.key)}:
-                        </span>
+                                                <span className="font-semibold mr-2">
+                                                    {String.fromCharCode(64 + option.key)}:
+                                                </span>
                                                 {option.text}
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* Edit Question Dialog */}
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Edit Question</DialogTitle>
+                        </DialogHeader>
+                        {selectedQuestion && (
+                            <QuestionsHeader
+                                mode="edit"
+                                question={selectedQuestion}
+                                topics={topics}
+                                onClose={() => {
+                                    setIsEditDialogOpen(false);
+                                    setSelectedQuestion(null);
+                                }}
+                                onSuccess={() => {
+                                    setIsEditDialogOpen(false);
+                                    setSelectedQuestion(null);
+                                    router.refresh();
+                                }}
+                            />
                         )}
                     </DialogContent>
                 </Dialog>

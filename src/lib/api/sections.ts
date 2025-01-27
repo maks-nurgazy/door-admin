@@ -19,6 +19,7 @@ export interface SectionsResponse {
 export interface SectionFilters {
     search?: string;
     page?: number;
+    size?: number;
 }
 
 export interface CreateSectionDto {
@@ -38,6 +39,10 @@ export const sectionsApi = {
 
             if (filters?.page !== undefined) {
                 searchQueries.push(`page=${filters.page}`);
+            }
+
+            if (filters?.size !== undefined) {
+                searchQueries.push(`size=${filters.size}`);
             }
 
             if (filters?.search) {

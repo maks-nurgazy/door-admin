@@ -18,6 +18,7 @@ export interface TopicsResponse {
 export interface TopicFilters {
     search?: string;
     page?: number;
+    size?: number;
 }
 
 export interface CreateTopicDto {
@@ -31,6 +32,10 @@ export const topicsApi = {
 
             if (filters?.page !== undefined) {
                 searchQueries.push(`page=${filters.page}`);
+            }
+
+            if (filters?.size !== undefined) {
+                searchQueries.push(`size=${filters.size}`);
             }
 
             if (filters?.search) {

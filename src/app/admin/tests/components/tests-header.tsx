@@ -39,7 +39,7 @@ const testSchema = z.object({
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().min(1, "End date is required"),
     attemptLimitPerWeek: z.coerce.number().min(1, "Attempt limit must be at least 1"),
-    status: z.enum(["ACTIVE", "INACTIVE"]),
+    status: z.enum(["ACTIVE", "IN_ACTIVE"]),
 });
 
 type TestFormValues = z.infer<typeof testSchema>;
@@ -68,7 +68,7 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
             startDate: new Date().toISOString().split('T')[0],
             endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             attemptLimitPerWeek: 1,
-            status: "INACTIVE",
+            status: "IN_ACTIVE",
         },
     });
 
@@ -183,7 +183,7 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="ACTIVE">Active</SelectItem>
-                                            <SelectItem value="INACTIVE">Inactive</SelectItem>
+                                            <SelectItem value="IN_ACTIVE">Inactive</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -309,7 +309,7 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
                                                 </FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="ACTIVE">Active</SelectItem>
-                                                    <SelectItem value="INACTIVE">Inactive</SelectItem>
+                                                    <SelectItem value="IN_ACTIVE">Inactive</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

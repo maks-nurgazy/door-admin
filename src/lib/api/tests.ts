@@ -4,7 +4,7 @@ export interface Test {
     id: number;
     title: string;
     description: string;
-    status: 'ACTIVE' | 'INACTIVE';
+    status: 'ACTIVE' | 'IN_ACTIVE';
     startDate: string;
     endDate: string;
     attemptLimitPerWeek: number;
@@ -40,7 +40,7 @@ export interface CreateTestDto {
     startDate: string;
     endDate: string;
     attemptLimitPerWeek: number;
-    status: 'ACTIVE' | 'INACTIVE';
+    status: 'ACTIVE' | 'IN_ACTIVE';
 }
 
 export type UpdateTestDto = CreateTestDto

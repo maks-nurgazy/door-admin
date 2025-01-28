@@ -9,6 +9,23 @@ export interface Section {
     questionIds?: number[];
 }
 
+export interface SectionQuestion {
+    id: number;
+    text: string;
+    imageUrl: string | null;
+    options: {
+        key: number;
+        text: string;
+    }[];
+    answerKey: number;
+    type: 'TEXT' | 'IMAGE';
+    topics: {
+        id: number;
+        title: string;
+    }[];
+    createdAt: string;
+}
+
 export interface SectionShortDto {
     id: number;
     title: string;
@@ -142,6 +159,20 @@ export const sectionsApi = {
                 }
             }
             throw new Error('Failed to update section questions');
+        }
+    },
+
+    getSectionQuestions: async (sectionId: number): Promise<SectionQuestion[]> => {
+        try {
+            const response = await api.get(`/admin/sections/${sectionId}/questions`);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    throw new Error(`Failed to get section questions: ${error.response.data?.message || error.message}`);
+                }
+            }
+            throw new Error('Failed to get section questions');
         }
     }
 };

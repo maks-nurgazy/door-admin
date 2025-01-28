@@ -12,7 +12,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, Eye, ListPlus, Search } from "lucide-react";
+import { Pencil, Trash2, Eye, ListPlus } from "lucide-react";
 import { Section, SectionsResponse, sectionsApi } from "@/lib/api/sections";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -73,6 +73,7 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
     const [totalQuestionPages, setTotalQuestionPages] = useState(1);
     const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
     const [selectedTopic, setSelectedTopic] = useState<string>("all");
+    const [sectionQuestions, setSectionQuestions] = useState<Question[]>([]);
 
     const currentPage = searchParams.get("page")
         ? parseInt(searchParams.get("page")!) - 1
@@ -90,7 +91,17 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
                 search,
                 topicId: topicId === "all" ? undefined : topicId,
             });
-            setQuestions(response.data);
+
+            // If we're on the first page, prepend section questions
+            if (page === 0 && selectedSection) {
+                const currentSectionQuestions = sectionQuestions.filter(q =>
+                    !response.data.some(newQ => newQ.id === q.id)
+                );
+                setQuestions([...currentSectionQuestions, ...response.data]);
+            } else {
+                setQuestions(response.data);
+            }
+
             setTotalQuestionPages(response.totalPages);
         } catch (error) {
             console.error('Failed to load questions:', error);
@@ -99,15 +110,23 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
         }
     };
 
-    const handlePageChange = async (newPage: number) => {
-        setIsLoading(true);
+    const handleAssignQuestions = async (section: Section) => {
+        setSelectedSection(section);
+        setIsLoadingQuestions(true);
         try {
-            const params = new URLSearchParams(searchParams.toString());
-            params.set("page", (newPage + 1).toString());
-            router.push(`${pathname}?${params.toString()}`);
+            // Load section's current questions
+            const sectionQuestionsData = await sectionsApi.getSectionQuestions(section.id);
+            setSectionQuestions(sectionQuestionsData);
+            setSelectedQuestions(sectionQuestionsData.map(q => q.id));
+
+            // Load all questions for the first page
+            await loadQuestions(0, questionSearch, selectedTopic);
+        } catch (error) {
+            console.error('Failed to load section questions:', error);
         } finally {
-            setIsLoading(false);
+            setIsLoadingQuestions(false);
         }
+        setIsQuestionsDialogOpen(true);
     };
 
     const handleQuestionSearch = (value: string) => {
@@ -124,7 +143,18 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
 
     const handleQuestionPageChange = (newPage: number) => {
         setQuestionsPage(newPage);
-        loadQuestions(newPage, questionSearch);
+        loadQuestions(newPage, questionSearch, selectedTopic);
+    };
+
+    const handlePageChange = async (newPage: number) => {
+        setIsLoading(true);
+        try {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set("page", (newPage + 1).toString());
+            router.push(`${pathname}?${params.toString()}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleView = (section: Section) => {
@@ -152,13 +182,6 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
         }
     };
 
-    const handleAssignQuestions = async (section: Section) => {
-        setSelectedSection(section);
-        setSelectedQuestions(section.questionIds || []);
-        setIsQuestionsDialogOpen(true);
-        await loadQuestions(0);
-    };
-
     const toggleQuestionSelection = (questionId: number) => {
         setSelectedQuestions(prev =>
             prev.includes(questionId)
@@ -177,10 +200,6 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
             // Determine which questions to assign and which to remove
             const questionsToAssign = selectedQuestions.filter(id => !currentQuestions.includes(id));
             const questionsToRemove = currentQuestions.filter(id => !selectedQuestions.includes(id));
-
-            console.log(questionsToAssign);
-            console.log("remove");
-            console.log(questionsToRemove);
 
             // Update questions in sequence
             if (questionsToAssign.length > 0) {

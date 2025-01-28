@@ -6,16 +6,18 @@ import { sectionsApi } from "@/lib/api/sections";
 import Loading from "./loading";
 
 interface PageProps {
-  searchParams: {
-    search?: string;
-    page?: string;
-  };
+  searchParams: Promise<{
+      search?: string;
+      page?: string;
+  }>;
 }
 
 export default async function SectionsPage({ searchParams }: PageProps) {
+    const searchParameters = await searchParams;
+
   const filters = {
-    search: searchParams.search,
-    page: searchParams.page ? parseInt(searchParams.page) - 1 : 0,
+    search: searchParameters.search,
+    page: searchParameters.page ? parseInt(searchParameters.page) - 1 : 0,
   };
 
   const initialData = await sectionsApi.getSections(filters);

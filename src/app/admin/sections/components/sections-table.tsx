@@ -12,7 +12,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, Eye, ListPlus } from "lucide-react";
+import { Pencil, Trash2, Eye, ListPlus, Search } from "lucide-react";
 import { Section, SectionsResponse, sectionsApi } from "@/lib/api/sections";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -171,7 +171,26 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
         if (!selectedSection) return;
 
         try {
-            await sectionsApi.updateSectionQuestions(selectedSection.id, selectedQuestions);
+            // Get the current section's questions
+            const currentQuestions = selectedSection.questionIds || [];
+
+            // Determine which questions to assign and which to remove
+            const questionsToAssign = selectedQuestions.filter(id => !currentQuestions.includes(id));
+            const questionsToRemove = currentQuestions.filter(id => !selectedQuestions.includes(id));
+
+            console.log(questionsToAssign);
+            console.log("remove");
+            console.log(questionsToRemove);
+
+            // Update questions in sequence
+            if (questionsToAssign.length > 0) {
+                await sectionsApi.updateSectionQuestions(selectedSection.id, questionsToAssign, 'assign');
+            }
+
+            if (questionsToRemove.length > 0) {
+                await sectionsApi.updateSectionQuestions(selectedSection.id, questionsToRemove, 'remove');
+            }
+
             setIsQuestionsDialogOpen(false);
             setSelectedSection(null);
             setSelectedQuestions([]);

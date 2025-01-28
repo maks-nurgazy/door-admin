@@ -21,16 +21,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -47,6 +37,14 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Question, questionsApi } from "@/lib/api/questions";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 const sectionSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(50, "Title must be less than 50 characters"),
@@ -59,12 +57,6 @@ interface SectionsTableProps {
     initialData: SectionsResponse;
 }
 
-// Mock questions data for demonstration
-const mockQuestions = [
-    { id: 1, text: "What is the capital of France?", type: "text" },
-    { id: 2, text: "Solve for x: 2x + 5 = 13", type: "text" },
-];
-
 export function SectionsTable({ initialData }: SectionsTableProps) {
     const router = useRouter();
     const pathname = usePathname();
@@ -73,10 +65,14 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isQuestionsDialogOpen, setIsQuestionsDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedSection, setSelectedSection] = useState<Section | null>(null);
-    const [sectionToDelete, setSectionToDelete] = useState<Section | null>(null);
     const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
+    const [questions, setQuestions] = useState<Question[]>([]);
+    const [questionSearch, setQuestionSearch] = useState("");
+    const [questionsPage, setQuestionsPage] = useState(0);
+    const [totalQuestionPages, setTotalQuestionPages] = useState(1);
+    const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+    const [selectedTopic, setSelectedTopic] = useState<string>("all");
 
     const currentPage = searchParams.get("page")
         ? parseInt(searchParams.get("page")!) - 1
@@ -85,6 +81,23 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
     const form = useForm<SectionFormValues>({
         resolver: zodResolver(sectionSchema),
     });
+
+    const loadQuestions = async (page: number, search?: string, topicId?: string) => {
+        setIsLoadingQuestions(true);
+        try {
+            const response = await questionsApi.getQuestions({
+                page,
+                search,
+                topicId: topicId === "all" ? undefined : topicId,
+            });
+            setQuestions(response.data);
+            setTotalQuestionPages(response.totalPages);
+        } catch (error) {
+            console.error('Failed to load questions:', error);
+        } finally {
+            setIsLoadingQuestions(false);
+        }
+    };
 
     const handlePageChange = async (newPage: number) => {
         setIsLoading(true);
@@ -95,6 +108,23 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleQuestionSearch = (value: string) => {
+        setQuestionSearch(value);
+        setQuestionsPage(0);
+        loadQuestions(0, value, selectedTopic);
+    };
+
+    const handleTopicChange = (value: string) => {
+        setSelectedTopic(value);
+        setQuestionsPage(0);
+        loadQuestions(0, questionSearch, value);
+    };
+
+    const handleQuestionPageChange = (newPage: number) => {
+        setQuestionsPage(newPage);
+        loadQuestions(newPage, questionSearch);
     };
 
     const handleView = (section: Section) => {
@@ -111,29 +141,22 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
         setIsEditDialogOpen(true);
     };
 
-    const handleDelete = async (section: Section) => {
-        setSectionToDelete(section);
-        setIsDeleteDialogOpen(true);
-    };
-
-    const confirmDelete = async () => {
-        if (!sectionToDelete) return;
-
-        try {
-            await sectionsApi.deleteSection(sectionToDelete.id);
-            router.refresh();
-        } catch (error) {
-            console.error('Failed to delete section:', error);
-        } finally {
-            setIsDeleteDialogOpen(false);
-            setSectionToDelete(null);
+    const handleDelete = async (id: number) => {
+        if (confirm("Are you sure you want to delete this section?")) {
+            try {
+                await sectionsApi.deleteSection(id);
+                router.refresh();
+            } catch (error) {
+                console.error('Failed to delete section:', error);
+            }
         }
     };
 
-    const handleAssignQuestions = (section: Section) => {
+    const handleAssignQuestions = async (section: Section) => {
         setSelectedSection(section);
-        setSelectedQuestions([]);
+        setSelectedQuestions(section.questionIds || []);
         setIsQuestionsDialogOpen(true);
+        await loadQuestions(0);
     };
 
     const toggleQuestionSelection = (questionId: number) => {
@@ -236,7 +259,7 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleDelete(section)}
+                                                onClick={() => handleDelete(section.id)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -269,31 +292,6 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
                         </Button>
                     </div>
                 )}
-
-                {/* Delete Confirmation Dialog */}
-                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the section
-                                <span className="font-medium"> {sectionToDelete?.title}</span> and remove its data
-                                from our servers.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setSectionToDelete(null)}>
-                                Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={confirmDelete}
-                                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                            >
-                                Delete Section
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
 
                 {/* View Section Details Dialog */}
                 <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
@@ -378,42 +376,113 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
                             <DialogTitle>Assign Questions to {selectedSection?.title}</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1">
+                                    <Input
+                                        placeholder="Search questions..."
+                                        value={questionSearch}
+                                        onChange={(e) => handleQuestionSearch(e.target.value)}
+                                    />
+                                </div>
+                                <Select
+                                    value={selectedTopic}
+                                    onValueChange={handleTopicChange}
+                                >
+                                    <SelectTrigger className="w-[200px]">
+                                        <SelectValue placeholder="Filter by topic" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Topics</SelectItem>
+                                        {questions[0]?.topics.map((topic) => (
+                                            <SelectItem key={topic.id} value={topic.id.toString()}>
+                                                {topic.title}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             <ScrollArea className="h-[400px] rounded-md border p-4">
-                                {mockQuestions.map((question) => (
-                                    <div
-                                        key={question.id}
-                                        className={cn(
-                                            "flex items-center justify-between p-2 rounded-lg hover:bg-accent cursor-pointer",
-                                            selectedQuestions.includes(question.id) && "bg-accent"
-                                        )}
-                                        onClick={() => toggleQuestionSelection(question.id)}
-                                    >
-                                        <div className="flex-1">
-                                            <p className="font-medium">{question.text}</p>
-                                            <div className="flex gap-2 mt-1">
-                                                <Badge variant="outline">{question.type}</Badge>
-                                            </div>
+                                {isLoadingQuestions ? (
+                                    Array.from({ length: 5 }).map((_, index) => (
+                                        <div key={index} className="mb-4">
+                                            <Skeleton className="h-6 w-full mb-2" />
+                                            <Skeleton className="h-4 w-20" />
                                         </div>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedQuestions.includes(question.id)}
-                                            onChange={() => toggleQuestionSelection(question.id)}
-                                            className="ml-4"
-                                        />
+                                    ))
+                                ) : questions.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        No questions found
                                     </div>
-                                ))}
+                                ) : (
+                                    questions.map((question) => (
+                                        <div
+                                            key={question.id}
+                                            className={cn(
+                                                "flex items-center justify-between p-2 rounded-lg hover:bg-accent cursor-pointer mb-2",
+                                                selectedQuestions.includes(question.id) && "bg-accent"
+                                            )}
+                                            onClick={() => toggleQuestionSelection(question.id)}
+                                        >
+                                            <div className="flex-1">
+                                                <p className="font-medium">{question.text}</p>
+                                                <div className="flex gap-2 mt-1">
+                                                    <Badge variant="outline">{question.type}</Badge>
+                                                    {question.topics.map((topic) => (
+                                                        <Badge key={topic.id} variant="secondary">
+                                                            {topic.title}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedQuestions.includes(question.id)}
+                                                onChange={() => toggleQuestionSelection(question.id)}
+                                                className="ml-4"
+                                            />
+                                        </div>
+                                    ))
+                                )}
                             </ScrollArea>
-                            <div className="flex justify-end gap-3 mt-4">
-                                <Button variant="outline" onClick={() => {
-                                    setIsQuestionsDialogOpen(false);
-                                    setSelectedSection(null);
-                                    setSelectedQuestions([]);
-                                }}>
-                                    Cancel
-                                </Button>
-                                <Button onClick={handleSaveQuestions}>
-                                    Save Questions
-                                </Button>
+                            {totalQuestionPages > 1 && (
+                                <div className="flex justify-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => handleQuestionPageChange(questionsPage - 1)}
+                                        disabled={questionsPage === 0}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <span className="py-2 px-4">
+                    Page {questionsPage + 1} of {totalQuestionPages}
+                  </span>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => handleQuestionPageChange(questionsPage + 1)}
+                                        disabled={questionsPage === totalQuestionPages - 1}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            )}
+                            <div className="flex justify-between items-center">
+                                <p className="text-sm text-muted-foreground">
+                                    {selectedQuestions.length} questions selected
+                                </p>
+                                <div className="flex gap-3">
+                                    <Button variant="outline" onClick={() => {
+                                        setIsQuestionsDialogOpen(false);
+                                        setSelectedSection(null);
+                                        setSelectedQuestions([]);
+                                        setQuestionSearch("");
+                                        setQuestionsPage(0);
+                                    }}>
+                                        Cancel
+                                    </Button>
+                                    <Button onClick={handleSaveQuestions}>
+                                        Save Questions
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </DialogContent>

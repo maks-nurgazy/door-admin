@@ -6,6 +6,7 @@ export interface Section {
     title: string;
     durationMinutes: number;
     numberOfQuestions: number;
+    questionIds?: number[];
 }
 
 export interface SectionShortDto {

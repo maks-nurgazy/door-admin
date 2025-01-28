@@ -34,6 +34,7 @@ export interface QuestionFilters {
     search?: string;
     page?: number;
     size?: number;
+    topicId?: string;
 }
 
 export interface CreateQuestionDto {

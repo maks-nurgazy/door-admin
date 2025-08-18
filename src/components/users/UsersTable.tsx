@@ -30,7 +30,7 @@ export function UsersTable({pageData}: { pageData: any }) {
     });
 
     const handleStatusChange = (userId: number, newStatus: string) => {
-        setUsers(users.map(user =>
+        setUsers(users.map((user: any) =>
             user.id === userId ? {...user, registrationStatus: newStatus} : user
         ));
     };
@@ -47,7 +47,7 @@ export function UsersTable({pageData}: { pageData: any }) {
 
     const handleSaveEdit = () => {
         if (selectedUser) {
-            setUsers(users.map(user =>
+            setUsers(users.map((user: any) =>
                 user.id === selectedUser.id ? {...user, ...editForm} : user
             ));
             setIsEditDialogOpen(false);
@@ -148,7 +148,7 @@ export function UsersTable({pageData}: { pageData: any }) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedUsers.map((user) => (
+                            {paginatedUsers.map((user: any) => (
                                 <TableRow key={user.id}>
                                     <TableCell
                                         className="font-medium">{`${user.firstName} ${user.lastName}`}</TableCell>
@@ -300,7 +300,7 @@ export function UsersTable({pageData}: { pageData: any }) {
                                     </Button>
                                     <Button
                                         onClick={() => {
-                                            setUsers(users.map(user =>
+                                            setUsers(users.map((user: any) =>
                                                 user.id === selectedUser.id
                                                     ? {...user, paymentStatus: "paid"}
                                                     : user

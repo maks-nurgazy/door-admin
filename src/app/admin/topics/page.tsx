@@ -6,16 +6,17 @@ import {topicsApi} from "@/lib/api/topics";
 import Loading from "@/app/admin/users/loading";
 
 interface PageProps {
-    searchParams: {
+    searchParams: Promise<{
         search?: string;
         page?: string;
-    };
+    }>;
 }
 
 export default async function TopicsPage({searchParams}: PageProps) {
+    const resolvedSearchParams = await searchParams;
     const filters = {
-        search: searchParams.search,
-        page: searchParams.page ? parseInt(searchParams.page) - 1 : 0,
+        search: resolvedSearchParams.search,
+        page: resolvedSearchParams.page ? parseInt(resolvedSearchParams.page) - 1 : 0,
     };
 
     const initialData = await topicsApi.getTopics(filters);

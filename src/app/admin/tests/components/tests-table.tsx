@@ -92,7 +92,14 @@ export function TestsTable({ initialData }: TestsTableProps) {
                 testsApi.getTestSections(test.id)
             ]);
 
-            setAllSections(allSectionsData);
+            // Convert SectionShortDto to TestSection format for consistency
+            const convertedSections = allSectionsData.map(section => ({
+                id: section.id,
+                title: section.title,
+                durationMinutes: 0, // Default value since SectionShortDto doesn't have this
+                numberOfQuestions: 0 // Default value since SectionShortDto doesn't have this
+            }));
+            setAllSections(convertedSections);
             setTestSections(testSectionsData);
             setSelectedSections(testSectionsData.map(s => s.id));
             setIsSectionsDialogOpen(true);

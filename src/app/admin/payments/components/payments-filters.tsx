@@ -14,7 +14,7 @@ import {
 export function PaymentsFilters() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [isPending, startTransition] = useTransition();
+    const [, startTransition] = useTransition();
 
     const [search, setSearch] = useState(searchParams.get("search") || "");
     const [status, setStatus] = useState(searchParams.get("status") || "all");

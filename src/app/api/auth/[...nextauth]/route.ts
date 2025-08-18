@@ -60,6 +60,8 @@ export const authOptions: NextAuthOptions = {
                     // }
                     const data = await res.json();
 
+                    console.log("data: " + data);
+
                     // Return a user object with everything we need for session
                     return {
                         id: data.userInfo.id,

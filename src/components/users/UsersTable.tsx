@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import Image from "next/image";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
@@ -279,11 +280,14 @@ export function UsersTable({pageData}: { pageData: any }) {
                     <div className="py-4">
                         {selectedUser?.paymentReceipt ? (
                             <div className="space-y-4">
-                                <img
-                                    src={selectedUser.paymentReceipt}
-                                    alt="Payment Receipt"
-                                    className="max-w-full rounded-lg"
-                                />
+                                <div className="relative w-full h-64 rounded-lg overflow-hidden">
+                                    <Image
+                                        src={selectedUser.paymentReceipt}
+                                        alt="Payment Receipt"
+                                        fill
+                                        className="object-contain"
+                                    />
+                                </div>
                                 <div className="flex justify-end gap-3">
                                     <Button
                                         variant="outline"

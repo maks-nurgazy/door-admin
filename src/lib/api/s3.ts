@@ -10,7 +10,7 @@ export const s3Api = {
                 fileType
             });
             return response.data.url;
-        } catch (error) {
+        } catch {
             throw new Error('Failed to get presigned URL');
         }
     },
@@ -22,7 +22,7 @@ export const s3Api = {
                     'Content-Type': file.type
                 }
             });
-        } catch (error) {
+        } catch {
             throw new Error('Failed to upload file');
         }
     }

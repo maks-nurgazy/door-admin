@@ -48,7 +48,7 @@ export function PaymentsTable({ initialData:paymentsData }: PaymentsTableProps) 
         try {
             await paymentsApi.updatePaymentStatus(id, status);
             const params = new URLSearchParams(searchParams.toString());
-            const updatedData = await paymentsApi.getPayments({
+            await paymentsApi.getPayments({
                 search: params.get("search") || undefined,
                 status: params.get("status") || undefined,
                 page: currentPage,

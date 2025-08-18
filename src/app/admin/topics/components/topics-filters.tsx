@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 export function TopicsFilters() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [isPending, startTransition] = useTransition();
+    const [, startTransition] = useTransition();
     const [search, setSearch] = useState(searchParams.get("search") || "");
 
     const updateFilters = useCallback(

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { s3Api } from "@/lib/api/s3";
@@ -72,10 +73,11 @@ export function ImageUpload({ value, onChange, onUploading }: ImageUploadProps) 
             </div>
             {preview && (
                 <div className="relative h-40 rounded-lg border overflow-hidden">
-                    <img
+                    <Image
                         src={preview}
                         alt="Preview"
-                        className="absolute inset-0 w-full h-full object-contain"
+                        fill
+                        className="object-contain"
                     />
                 </div>
             )}

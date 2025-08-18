@@ -8,7 +8,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/
 export function UsersFilters() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [isPending, startTransition] = useTransition();
+    const [, startTransition] = useTransition();
 
     const [name, setName] = useState(searchParams.get("name") || "");
     const [status, setStatus] = useState(searchParams.get("status") || "all");

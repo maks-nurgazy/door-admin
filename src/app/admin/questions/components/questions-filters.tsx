@@ -13,7 +13,7 @@ interface QuestionsFiltersProps {
 export function QuestionsFilters({ sections, topics }: QuestionsFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [isPending, startTransition] = useTransition();
+    const [, startTransition] = useTransition();
 
     const [search, setSearch] = useState(searchParams.get("search") || "");
     const [section, setSection] = useState(searchParams.get("section") || "all");

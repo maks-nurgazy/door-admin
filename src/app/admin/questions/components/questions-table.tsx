@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,7 +16,6 @@ import {
     AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
-    AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
@@ -239,10 +239,11 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                             <div>
                                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Question Image</h3>
                                                 <div className="relative h-40 rounded-lg border overflow-hidden">
-                                                    <img
+                                                    <Image
                                                         src={selectedQuestion.imageUrl}
                                                         alt="Question"
-                                                        className="absolute inset-0 w-full h-full object-contain"
+                                                        fill
+                                                        className="object-contain"
                                                     />
                                                 </div>
                                             </div>

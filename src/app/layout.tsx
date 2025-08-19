@@ -7,7 +7,7 @@ import Providers from "@/app/providers";
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Admin Dashboard',
+  title: 'Door Admin Dashboard',
   description: 'Admin dashboard for education platform',
 };
 

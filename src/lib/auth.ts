@@ -131,7 +131,7 @@ export const authOptions: NextAuthOptions = {
         },
     },
     events: {
-        async signOut({ token }) {
+        async signOut({}) {
             // Clean up any stored tokens on sign out
             if (typeof window !== "undefined") {
                 localStorage.removeItem("next-auth.session-token");
@@ -153,7 +153,7 @@ async function refreshAccessToken(token: any) {
         const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/auth/refresh`,
             {
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 method: "POST",
                 body: JSON.stringify({
                     refreshToken: token.refreshToken,

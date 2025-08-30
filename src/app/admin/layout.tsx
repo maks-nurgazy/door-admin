@@ -26,6 +26,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {signOut, useSession} from "next-auth/react";
+import {clearNextAuthStorage} from "@/lib/utils";
+import {SessionErrorBoundary} from "@/components/SessionErrorBoundary";
 
 const navigation = [
     {name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard},
@@ -50,7 +52,8 @@ export default function AdminLayout({
     const username = session?.user?.username || "";
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <SessionErrorBoundary>
+            <div className="min-h-screen bg-gray-100">
             {/* Header */}
             <header className="bg-white shadow-sm fixed w-full z-50">
                 <div className="flex items-center justify-between px-4 py-3">
@@ -91,8 +94,18 @@ export default function AdminLayout({
                                     <User className="mr-2 h-4 w-4"/>
                                     <span>Profile</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                    className="text-orange-600" 
+                                    onClick={() => {
+                                        clearNextAuthStorage();
+                                        window.location.reload();
+                                    }}
+                                >
+                                    <LogOut className="mr-2 h-4 w-4"/>
+                                    <span>Clear Session & Reload</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem className="text-red-600" onClick={() => {
-                                    signOut();
+                                    signOut({ callbackUrl: "/login" });
                                 }}>
                                     <LogOut className="mr-2 h-4 w-4"/>
                                     <span>Log out</span>
@@ -139,5 +152,6 @@ export default function AdminLayout({
                 </main>
             </div>
         </div>
+        </SessionErrorBoundary>
     );
 }

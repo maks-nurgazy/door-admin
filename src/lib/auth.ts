@@ -6,6 +6,10 @@ export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
     session: {
         strategy: "jwt",
+        maxAge: 24 * 60 * 60, // 24 hours
+    },
+    jwt: {
+        maxAge: 24 * 60 * 60, // 24 hours
     },
     providers: [
         CredentialsProvider({
@@ -82,7 +86,7 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
     callbacks: {
-        async jwt({token, user}) {
+        async jwt({token, user, trigger}) {
             // If user is set, this is the first call after `authorize`
             if (user) {
                 token.user = {
@@ -96,8 +100,16 @@ export const authOptions: NextAuthOptions = {
                 };
                 token.accessToken = user.accessToken;
                 token.refreshToken = user.refreshToken;
+                token.accessTokenExpires = Date.now() + 60 * 60 * 1000; // 1 hour
             }
-            return token;
+
+            // Return previous token if the access token has not expired yet
+            if (Date.now() < (token.accessTokenExpires as number)) {
+                return token;
+            }
+
+            // Access token has expired, try to update it
+            return refreshAccessToken(token);
         },
 
         async session({session, token}) {
@@ -113,8 +125,60 @@ export const authOptions: NextAuthOptions = {
             };
             session.accessToken = token.accessToken;
             session.refreshToken = token.refreshToken;
+            session.error = token.error;
 
             return session;
         },
     },
+    events: {
+        async signOut({ token }) {
+            // Clean up any stored tokens on sign out
+            if (typeof window !== "undefined") {
+                localStorage.removeItem("next-auth.session-token");
+                localStorage.removeItem("next-auth.csrf-token");
+                sessionStorage.removeItem("next-auth.session-token");
+                sessionStorage.removeItem("next-auth.csrf-token");
+            }
+        },
+    },
 };
+
+/**
+ * Takes a token, and returns a new token with updated
+ * `accessToken` and `accessTokenExpires`. If an error occurs,
+ * returns the old token and an error property
+ */
+async function refreshAccessToken(token: any) {
+    try {
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/auth/refresh`,
+            {
+                headers: { "Content-Type": "application/json" },
+                method: "POST",
+                body: JSON.stringify({
+                    refreshToken: token.refreshToken,
+                }),
+            }
+        );
+
+        const refreshedTokens = await response.json();
+
+        if (!response.ok) {
+            throw refreshedTokens;
+        }
+
+        return {
+            ...token,
+            accessToken: refreshedTokens.accessToken,
+            accessTokenExpires: Date.now() + 60 * 60 * 1000, // 1 hour
+            refreshToken: refreshedTokens.refreshToken ?? token.refreshToken, // Fall back to old refresh token
+        };
+    } catch (error) {
+        console.log("Error refreshing access token", error);
+
+        return {
+            ...token,
+            error: "RefreshAccessTokenError",
+        };
+    }
+}

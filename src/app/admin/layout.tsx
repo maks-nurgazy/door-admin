@@ -12,7 +12,8 @@ import {
     LogOut,
     User,
     Layers,
-    GraduationCap
+    GraduationCap,
+    Shield
 } from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
@@ -37,6 +38,7 @@ const navigation = [
     {name: "Payments", href: "/admin/payments", icon: CreditCard},
     {name: "Questions", href: "/admin/questions", icon: HelpCircle},
     {name: "Topics", href: "/admin/topics", icon: BookOpen},
+    {name: "User Test Access", href: "/admin/user-test-access", icon: Shield},
 ];
 
 export default function AdminLayout({

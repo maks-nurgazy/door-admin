@@ -38,3 +38,57 @@ export function clearNextAuthStorage() {
     document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
   });
 }
+
+/**
+ * Formats a date in a beautiful and readable way
+ * Examples: "2 hours ago", "Yesterday at 3:45 PM", "Dec 15, 2023 at 2:30 PM"
+ */
+export function formatDateBeautiful(date: string | Date): string {
+  const now = new Date();
+  const targetDate = new Date(date);
+  const diffInMs = now.getTime() - targetDate.getTime();
+  const diffInHours = diffInMs / (1000 * 60 * 60);
+  const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+  // Format options for different time ranges
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+
+  const shortDateOptions: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+
+  if (diffInHours < 1) {
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    if (diffInMinutes < 1) {
+      return "Just now";
+    }
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+  } else if (diffInHours < 24) {
+    return `${Math.floor(diffInHours)} hour${Math.floor(diffInHours) > 1 ? 's' : ''} ago`;
+  } else if (diffInDays < 2) {
+    return `Yesterday at ${targetDate.toLocaleTimeString('en-US', timeOptions)}`;
+  } else if (diffInDays < 7) {
+    return `${Math.floor(diffInDays)} day${Math.floor(diffInDays) > 1 ? 's' : ''} ago`;
+  } else if (diffInDays < 365) {
+    return targetDate.toLocaleDateString('en-US', shortDateOptions);
+  } else {
+    return targetDate.toLocaleDateString('en-US', dateOptions);
+  }
+}

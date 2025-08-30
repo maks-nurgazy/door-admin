@@ -29,12 +29,19 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2, Calendar } from "lucide-react";
 import { Question, QuestionsResponse, questionsApi } from "@/lib/api/questions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TopicShortDto } from "@/lib/api/topics";
 import { QuestionsHeader } from "./questions-header";
+import { formatDateBeautiful } from "@/lib/utils";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface QuestionsTableProps {
     initialData: QuestionsResponse;
@@ -121,9 +128,11 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                 <CardTitle>Questions Overview</CardTitle>
             </CardHeader>
             <CardContent>
-                <Table>
+                <TooltipProvider>
+                    <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>ID</TableHead>
                             <TableHead>Question</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead>Topics</TableHead>
@@ -135,10 +144,11 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                         {isLoading ? (
                             Array.from({ length: 10 }).map((_, index) => (
                                 <TableRow key={index}>
+                                    <TableCell><Skeleton className="h-4 w-[60px]" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-[300px]" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
                                             <Skeleton className="h-8 w-8 rounded-md" />
@@ -151,6 +161,9 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                         ) : (
                             questionsData.data.map((question) => (
                                 <TableRow key={question.id}>
+                                    <TableCell className="font-mono text-sm text-muted-foreground">
+                                        #{question.id}
+                                    </TableCell>
                                     <TableCell className="font-medium max-w-md">
                                         <div className="truncate">{question.text}</div>
                                     </TableCell>
@@ -166,7 +179,27 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                             ))}
                                         </div>
                                     </TableCell>
-                                    <TableCell>{new Date(question.createdAt).toLocaleDateString()}</TableCell>
+                                    <TableCell>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="text-sm text-muted-foreground flex items-center gap-1 cursor-help">
+                                                    <Calendar className="h-3 w-3" />
+                                                    {formatDateBeautiful(question.createdAt)}
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{new Date(question.createdAt).toLocaleString('en-US', {
+                                                    weekday: 'long',
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                    hour: 'numeric',
+                                                    minute: '2-digit',
+                                                    hour12: true
+                                                })}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
                                             <Button
@@ -196,8 +229,9 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                 </TableRow>
                             ))
                         )}
-                    </TableBody>
-                </Table>
+                                            </TableBody>
+                    </Table>
+                </TooltipProvider>
 
                 {questionsData.totalPages > 1 && (
                     <div className="flex justify-center gap-2 mt-4">
@@ -230,6 +264,17 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                             <div className="space-y-4 p-4">
                                 {selectedQuestion && (
                                     <>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Question ID</h3>
+                                                <p className="text-lg font-mono">#{selectedQuestion.id}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Created</h3>
+                                                <p className="text-sm text-muted-foreground">{formatDateBeautiful(selectedQuestion.createdAt)}</p>
+                                            </div>
+                                        </div>
+                                        
                                         <div>
                                             <h3 className="text-sm font-medium text-muted-foreground mb-1">Question Text</h3>
                                             <p className="text-lg">{selectedQuestion.text}</p>
@@ -323,6 +368,9 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                         </AlertDialogHeader>
                         {selectedQuestion && (
                             <div className="mt-4 p-4 rounded-lg bg-muted">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-xs font-mono text-muted-foreground">#{selectedQuestion.id}</span>
+                                </div>
                                 <div className="text-sm font-medium">
                                     {selectedQuestion.text}
                                 </div>

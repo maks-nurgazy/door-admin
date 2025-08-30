@@ -197,14 +197,11 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                <p>{new Date(question.createdAt).toLocaleString('en-US', {
+                                                <p>{new Date(question.createdAt).toLocaleDateString('en-US', {
                                                     weekday: 'long',
                                                     year: 'numeric',
                                                     month: 'long',
-                                                    day: 'numeric',
-                                                    hour: 'numeric',
-                                                    minute: '2-digit',
-                                                    hour12: true
+                                                    day: 'numeric'
                                                 })}</p>
                                             </TooltipContent>
                                         </Tooltip>

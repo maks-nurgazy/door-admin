@@ -81,6 +81,13 @@ export function formatDateBeautiful(date: string | Date): string {
     hour12: true
   };
 
+  // For questions, we only want to show the date without time
+  const questionDateOptions: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  };
+
   if (diffInHours < 1) {
     const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
     if (diffInMinutes < 1) {
@@ -90,12 +97,12 @@ export function formatDateBeautiful(date: string | Date): string {
   } else if (diffInHours < 24) {
     return `${Math.floor(diffInHours)} hour${Math.floor(diffInHours) > 1 ? 's' : ''} ago`;
   } else if (diffInDays < 2) {
-    return `Yesterday at ${targetDate.toLocaleTimeString('en-US', timeOptions)}`;
+    return `Yesterday`;
   } else if (diffInDays < 7) {
     return `${Math.floor(diffInDays)} day${Math.floor(diffInDays) > 1 ? 's' : ''} ago`;
   } else if (diffInDays < 365) {
-    return targetDate.toLocaleDateString('en-US', shortDateOptions);
+    return targetDate.toLocaleDateString('en-US', questionDateOptions);
   } else {
-    return targetDate.toLocaleDateString('en-US', dateOptions);
+    return targetDate.toLocaleDateString('en-US', questionDateOptions);
   }
 }

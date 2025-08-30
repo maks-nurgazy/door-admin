@@ -29,10 +29,12 @@ export function QuestionsHeader({mode = 'create', question, onClose, onSuccess, 
             } else {
                 await questionsApi.createQuestion(data);
                 setIsAddDialogOpen(false);
-                router.refresh();
+                // Instead of router.refresh(), call onSuccess to trigger data refresh
+                onSuccess?.();
             }
         } catch (error) {
             console.error('Failed to handle question:', error);
+            throw error; // Re-throw to let the form handle the error
         }
     };
 

@@ -8,7 +8,7 @@ import { questionsApi } from "@/lib/api/questions";
 import { sectionsApi } from "@/lib/api/sections";
 import { topicsApi } from "@/lib/api/topics";
 import Loading from "./loading";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 
 export default function QuestionsPage() {
@@ -24,42 +24,47 @@ export default function QuestionsPage() {
     });
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const filters = {
-                    search: searchParams.get("search") || undefined,
-                    page: searchParams.get("page") ? parseInt(searchParams.get("page")!) - 1 : 0,
-                    topicId: searchParams.get("topic") && searchParams.get("topic") !== "all" 
-                        ? parseInt(searchParams.get("topic")!) 
-                        : undefined,
-                    sectionId: searchParams.get("section") && searchParams.get("section") !== "all" 
-                        ? parseInt(searchParams.get("section")!) 
-                        : undefined,
-                    sortBy: searchParams.get("sortBy") || "createdAt",
-                    sortOrder: (searchParams.get("sortOrder") as 'asc' | 'desc') || "desc",
-                };
+    const loadData = useCallback(async () => {
+        try {
+            const filters = {
+                search: searchParams.get("search") || undefined,
+                page: searchParams.get("page") ? parseInt(searchParams.get("page")!) - 1 : 0,
+                topicId: searchParams.get("topic") && searchParams.get("topic") !== "all" 
+                    ? parseInt(searchParams.get("topic")!) 
+                    : undefined,
+                sectionId: searchParams.get("section") && searchParams.get("section") !== "all" 
+                    ? parseInt(searchParams.get("section")!) 
+                    : undefined,
+                sortBy: searchParams.get("sortBy") || "createdAt",
+                sortOrder: (searchParams.get("sortOrder") as 'asc' | 'desc') || "desc",
+            };
 
-                const [questions, sections, topics] = await Promise.all([
-                    questionsApi.getQuestions(filters),
-                    sectionsApi.getAllSections(),
-                    topicsApi.getAllTopics()
-                ]);
+            const [questions, sections, topics] = await Promise.all([
+                questionsApi.getQuestions(filters),
+                sectionsApi.getAllSections(),
+                topicsApi.getAllTopics()
+            ]);
 
-                setData({
-                    questions,
-                    sections,
-                    topics
-                });
-            } catch (error) {
-                console.error('Failed to load data:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadData();
+            setData({
+                questions,
+                sections,
+                topics
+            });
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }, [searchParams]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    const handleSuccess = useCallback(() => {
+        // Reload data after successful question creation/update
+        loadData();
+    }, [loadData]);
 
     if (isLoading) {
         return <Loading />;
@@ -67,7 +72,10 @@ export default function QuestionsPage() {
 
     return (
         <div className="space-y-6">
-            <QuestionsHeader topics={data.topics} />
+            <QuestionsHeader 
+                topics={data.topics} 
+                onSuccess={handleSuccess}
+            />
             <Suspense fallback={<div className="flex gap-4">
                 <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md" />
                 <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md" />

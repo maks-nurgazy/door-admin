@@ -26,6 +26,7 @@ import { TopicShortDto } from "@/lib/api/topics";
 import { TopicSelector } from "./topic-selector";
 import { ImageUpload } from "./image-upload";
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 const questionSchema = z.object({
     text: z.string().min(3, "Question text must be at least 3 characters"),
@@ -54,6 +55,7 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
         question ? question.topics.map(t => t.id) : []
     );
     const [isUploading, setIsUploading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const form = useForm<QuestionFormValues>({
         resolver: zodResolver(questionSchema),
@@ -78,10 +80,22 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
     });
 
     const handleSubmit = async (data: QuestionFormValues) => {
+        setIsSubmitting(true);
         try {
             await onSubmit(data);
+            toast({
+                title: "Success",
+                description: mode === 'edit' ? "Question updated successfully!" : "Question created successfully!",
+            });
         } catch (error) {
             console.error('Failed to submit question:', error);
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to save question. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -220,11 +234,12 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                         type="button"
                         variant="outline"
                         onClick={onCancel}
+                        disabled={isSubmitting}
                     >
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={isUploading}>
-                        {mode === 'edit' ? 'Save Changes' : 'Add Question'}
+                    <Button type="submit" disabled={isUploading || isSubmitting}>
+                        {isSubmitting ? "Saving..." : (mode === 'edit' ? 'Save Changes' : 'Add Question')}
                     </Button>
                 </div>
             </form>

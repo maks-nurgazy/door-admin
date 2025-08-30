@@ -89,7 +89,7 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
             const response = await questionsApi.getQuestions({
                 page,
                 search,
-                topicId: topicId === "all" ? undefined : topicId,
+                topicId: topicId === "all" ? undefined : Number(topicId),
             });
 
             // If we're on the first page, prepend section questions

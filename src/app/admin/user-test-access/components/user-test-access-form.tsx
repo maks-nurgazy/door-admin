@@ -54,8 +54,8 @@ export function UserTestAccessForm({ onSuccess, onCancel }: UserTestAccessFormPr
         const loadData = async () => {
             try {
                 const [usersData, testsData] = await Promise.all([
-                    usersApi.getUsers(0, 100),
-                    testsApi.getTests(0, 100)
+                    usersApi.getUsers({ page: 0 }),
+                    testsApi.getTests({ page: 0, size: 100 })
                 ]);
                 setUsers(usersData.data);
                 setTests(testsData.data);

@@ -30,6 +30,14 @@ export default function QuestionsPage() {
                 const filters = {
                     search: searchParams.get("search") || undefined,
                     page: searchParams.get("page") ? parseInt(searchParams.get("page")!) - 1 : 0,
+                    topicId: searchParams.get("topic") && searchParams.get("topic") !== "all" 
+                        ? parseInt(searchParams.get("topic")!) 
+                        : undefined,
+                    sectionId: searchParams.get("section") && searchParams.get("section") !== "all" 
+                        ? parseInt(searchParams.get("section")!) 
+                        : undefined,
+                    sortBy: searchParams.get("sortBy") || "createdAt",
+                    sortOrder: (searchParams.get("sortOrder") as 'asc' | 'desc') || "desc",
                 };
 
                 const [questions, sections, topics] = await Promise.all([

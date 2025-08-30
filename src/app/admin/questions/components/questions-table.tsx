@@ -69,6 +69,14 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
             const filters = {
                 search: searchParams.get("search") || undefined,
                 page: currentPage,
+                topicId: searchParams.get("topic") && searchParams.get("topic") !== "all" 
+                    ? parseInt(searchParams.get("topic")!) 
+                    : undefined,
+                sectionId: searchParams.get("section") && searchParams.get("section") !== "all" 
+                    ? parseInt(searchParams.get("section")!) 
+                    : undefined,
+                sortBy: searchParams.get("sortBy") || "createdAt",
+                sortOrder: (searchParams.get("sortOrder") as 'asc' | 'desc') || "desc",
             };
             const updatedData = await questionsApi.getQuestions(filters);
             setQuestionsData(updatedData);

@@ -34,7 +34,10 @@ export interface QuestionFilters {
     search?: string;
     page?: number;
     size?: number;
-    topicId?: string;
+    topicId?: number;
+    sectionId?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
 }
 
 export interface CreateQuestionDto {
@@ -63,9 +66,24 @@ export const questionsApi = {
                 searchQueries.push(`search=text:like:${filters.search}`);
             }
 
+            if (filters?.topicId) {
+                searchQueries.push(`topicId=${filters.topicId}`);
+            }
+
+            if (filters?.sectionId) {
+                searchQueries.push(`sectionId=${filters.sectionId}`);
+            }
+
+            if (filters?.sortBy) {
+                searchQueries.push(`sortBy=${filters.sortBy}`);
+            }
+
+            if (filters?.sortOrder) {
+                searchQueries.push(`sortOrder=${filters.sortOrder}`);
+            }
+
             const queryString = searchQueries.join('&');
             const url = `/admin/questions${queryString ? `?${queryString}` : ''}`;
-
             const response = await api.get(url);
             return response.data;
         } catch (error) {

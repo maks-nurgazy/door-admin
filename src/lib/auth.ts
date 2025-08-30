@@ -86,7 +86,7 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
     callbacks: {
-        async jwt({token, user, trigger}) {
+        async jwt({token, user}) {
             // If user is set, this is the first call after `authorize`
             if (user) {
                 token.user = {

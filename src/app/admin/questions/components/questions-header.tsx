@@ -19,8 +19,7 @@ interface QuestionsHeaderProps {
 
 export function QuestionsHeader({mode = 'create', question, onClose, onSuccess, topics = []}: QuestionsHeaderProps) {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const router = useRouter();
-
+    useRouter();
     const handleSubmit = async (data: QuestionFormValues) => {
         try {
             if (mode === 'edit' && question) {

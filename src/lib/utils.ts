@@ -58,30 +58,7 @@ export function formatDateBeautiful(date: string | Date): string {
   const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
 
   // Format options for different time ranges
-  const timeOptions: Intl.DateTimeFormatOptions = {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  };
-
-  const dateOptions: Intl.DateTimeFormatOptions = {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  };
-
-  const shortDateOptions: Intl.DateTimeFormatOptions = {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  };
-
-  // For questions, we only want to show the date without time
+// For questions, we only want to show the date without time
   const questionDateOptions: Intl.DateTimeFormatOptions = {
     month: 'short',
     day: 'numeric',

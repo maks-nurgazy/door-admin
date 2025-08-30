@@ -34,22 +34,9 @@ interface UserTestAccessTableProps {
 
 export function UserTestAccessTable({ initialData, onSuccess }: UserTestAccessTableProps) {
     const [accessData, setAccessData] = useState(initialData);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedAccess, setSelectedAccess] = useState<UserTestAccess | null>(null);
-
-    const refreshData = async () => {
-        setIsLoading(true);
-        try {
-            const updatedData = await userTestAccessApi.getAllAccess(0, 10);
-            setAccessData(updatedData);
-        } catch (error) {
-            console.error('Failed to refresh access data:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const handleDelete = (access: UserTestAccess) => {
         setSelectedAccess(access);
         setIsDeleteDialogOpen(true);
@@ -165,7 +152,7 @@ export function UserTestAccessTable({ initialData, onSuccess }: UserTestAccessTa
                         <AlertDialogHeader>
                             <AlertDialogTitle>Revoke Test Access</AlertDialogTitle>
                             <div className="text-sm text-muted-foreground">
-                                Are you sure you want to revoke this user's access to the test? This action cannot be undone.
+                                Are you sure you want to revoke this users access to the test? This action cannot be undone.
                             </div>
                         </AlertDialogHeader>
                         {selectedAccess && (

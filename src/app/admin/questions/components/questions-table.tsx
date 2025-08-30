@@ -126,6 +126,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
         }
     };
 
+    // Update local state when initialData changes
     useEffect(() => {
         setQuestionsData(initialData);
     }, [initialData]);

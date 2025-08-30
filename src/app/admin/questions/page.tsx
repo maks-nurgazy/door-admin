@@ -77,7 +77,11 @@ export default function QuestionsPage() {
             </Suspense>
             <Suspense fallback={<Loading />}>
                 {data.questions && (
-                    <QuestionsTable initialData={data.questions} topics={data.topics} />
+                    <QuestionsTable 
+                        key={`questions-${data.questions.currentPage}-${data.questions.totalItems}`}
+                        initialData={data.questions} 
+                        topics={data.topics} 
+                    />
                 )}
             </Suspense>
         </div>

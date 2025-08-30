@@ -46,6 +46,13 @@ export function clearNextAuthStorage() {
 export function formatDateBeautiful(date: string | Date): string {
   const now = new Date();
   const targetDate = new Date(date);
+  
+  // Check if the date is valid
+  if (isNaN(targetDate.getTime())) {
+    console.warn('Invalid date received:', date);
+    return 'Invalid date';
+  }
+  
   const diffInMs = now.getTime() - targetDate.getTime();
   const diffInHours = diffInMs / (1000 * 60 * 60);
   const diffInDays = diffInMs / (1000 * 60 * 60 * 24);

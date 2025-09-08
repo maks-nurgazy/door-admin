@@ -37,15 +37,15 @@ export const usersApi = {
             }
 
             if (filters?.name) {
-                searchParams.append('search', `firstName:like:${filters.name}`);
+                searchParams.append('name', filters.name);
             }
 
             if (filters?.status) {
-                searchParams.append('search', `status:=:${filters.status}`);
+                searchParams.append('status', filters.status);
             }
 
             if (filters?.paymentStatus) {
-                searchParams.append('search', `paymentStatus:=:${filters.paymentStatus}`);
+                searchParams.append('paymentStatus', filters.paymentStatus);
             }
 
             const queryString = searchParams.toString();

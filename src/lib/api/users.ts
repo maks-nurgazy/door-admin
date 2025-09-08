@@ -8,7 +8,7 @@ export interface User {
     lastName: string;
     username: string;
     status: string;
-    paymentStatus: string | null;
+    paymentStatus: string;
     createdAt: string;
 }
 

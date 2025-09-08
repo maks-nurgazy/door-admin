@@ -83,10 +83,17 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
         }
     };
 
-    const getPaymentBadge = (status: string | null) => {
-        return status === "PAID"
-            ? <Badge className="bg-green-500">Paid</Badge>
-            : <Badge variant="secondary">Unpaid</Badge>;
+    const getPaymentBadge = (status: string) => {
+        switch (status) {
+            case "PAID":
+                return <Badge className="bg-green-500">Paid</Badge>;
+            case "PENDING":
+                return <Badge className="bg-yellow-500">Pending</Badge>;
+            case "UNPAID":
+                return <Badge variant="secondary">Unpaid</Badge>;
+            default:
+                return <Badge variant="secondary">Unpaid</Badge>;
+        }
     };
 
     return (

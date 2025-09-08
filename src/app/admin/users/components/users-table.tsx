@@ -9,7 +9,8 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
-import {Ban, CheckCircle2, Pencil} from "lucide-react";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Ban, CheckCircle2, Pencil, Eye} from "lucide-react";
 import {User, usersApi, UsersResponse} from "@/lib/api/users";
 import { format } from "date-fns";
 
@@ -22,11 +23,14 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
     const searchParams = useSearchParams();
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
     const [editForm, setEditForm] = useState({
         firstName: "",
         lastName: "",
         email: "",
         phone: "",
+        status: "",
+        paymentStatus: "",
     });
 
     const currentPage = searchParams.get("page")
@@ -55,8 +59,15 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
             lastName: user.lastName,
             email: user.email || "",
             phone: user.phone,
+            status: user.status,
+            paymentStatus: user.paymentStatus,
         });
         setIsEditDialogOpen(true);
+    };
+
+    const handleViewUser = (user: User) => {
+        setSelectedUser(user);
+        setIsDetailDialogOpen(true);
     };
 
     const handleSaveEdit = async () => {
@@ -130,29 +141,19 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                                         <Button
                                             variant="ghost"
                                             size="icon"
+                                            onClick={() => handleViewUser(user)}
+                                            title="View Details"
+                                        >
+                                            <Eye className="h-4 w-4"/>
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
                                             onClick={() => handleEditUser(user)}
+                                            title="Edit User"
                                         >
                                             <Pencil className="h-4 w-4"/>
                                         </Button>
-                                        {user.status !== "BANNED" ? (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleStatusChange(user.id, "BANNED")}
-                                                className="text-red-500"
-                                            >
-                                                <Ban className="h-4 w-4"/>
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleStatusChange(user.id, "APPROVED")}
-                                                className="text-green-500"
-                                            >
-                                                <CheckCircle2 className="h-4 w-4"/>
-                                            </Button>
-                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -222,6 +223,38 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                                     onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
                                 />
                             </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="status">Status</Label>
+                                <Select
+                                    value={editForm.status}
+                                    onValueChange={(value) => setEditForm({...editForm, status: value})}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PENDING">Pending</SelectItem>
+                                        <SelectItem value="APPROVED">Approved</SelectItem>
+                                        <SelectItem value="BANNED">Banned</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="paymentStatus">Payment Status</Label>
+                                <Select
+                                    value={editForm.paymentStatus}
+                                    onValueChange={(value) => setEditForm({...editForm, paymentStatus: value})}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select payment status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PENDING">Pending</SelectItem>
+                                        <SelectItem value="PAID">Paid</SelectItem>
+                                        <SelectItem value="UNPAID">Unpaid</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                         <div className="flex justify-end gap-3">
                             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
@@ -229,6 +262,64 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                             </Button>
                             <Button onClick={handleSaveEdit}>
                                 Save Changes
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* User Detail Dialog */}
+                <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>User Details</DialogTitle>
+                        </DialogHeader>
+                        {selectedUser && (
+                            <div className="grid gap-6 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+                                        <p className="text-sm">{`${selectedUser.firstName} ${selectedUser.lastName}`}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-muted-foreground">Username</Label>
+                                        <p className="text-sm">{selectedUser.username}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                                        <p className="text-sm">{selectedUser.email || '-'}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
+                                        <p className="text-sm">{selectedUser.phone}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-muted-foreground">Registration Date</Label>
+                                        <p className="text-sm">{format(new Date(selectedUser.createdAt), "MMM dd, yyyy 'at' HH:mm")}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-muted-foreground">User ID</Label>
+                                        <p className="text-sm">{selectedUser.id}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                                        <div>{getStatusBadge(selectedUser.status)}</div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-muted-foreground">Payment Status</Label>
+                                        <div>{getPaymentBadge(selectedUser.paymentStatus)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex justify-end">
+                            <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
+                                Close
                             </Button>
                         </div>
                     </DialogContent>

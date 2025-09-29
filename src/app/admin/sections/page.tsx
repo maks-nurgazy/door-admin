@@ -3,6 +3,7 @@ import { SectionsTable } from "./components/sections-table";
 import { SectionsHeader } from "./components/sections-header";
 import { SectionsFilters } from "./components/sections-filters";
 import { sectionsApi } from "@/lib/api/sections";
+import { topicsApi } from "@/lib/api/topics";
 import Loading from "./loading";
 
 interface PageProps {
@@ -21,6 +22,7 @@ export default async function SectionsPage({ searchParams }: PageProps) {
   };
 
   const initialData = await sectionsApi.getSections(filters);
+  const topics = await topicsApi.getTopics();
 
   return (
       <div className="space-y-6">
@@ -31,7 +33,7 @@ export default async function SectionsPage({ searchParams }: PageProps) {
           <SectionsFilters />
         </Suspense>
         <Suspense fallback={<Loading />}>
-          <SectionsTable initialData={initialData} />
+          <SectionsTable initialData={initialData} topics={topics} />
         </Suspense>
       </div>
   );

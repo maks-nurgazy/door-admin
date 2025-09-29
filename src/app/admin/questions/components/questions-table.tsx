@@ -174,18 +174,21 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                         #{question.id}
                                     </TableCell>
                                     <TableCell className="font-medium max-w-md">
-                                        <div className="truncate">{question.text}</div>
+                                        <div className="truncate">{question.questionText || 'No text'}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline">{question.type}</Badge>
+                                        <Badge variant="outline">{question.type || 'Unknown'}</Badge>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
-                                            {question.topics.map((topic) => (
-                                                <Badge key={topic.id} variant="secondary">
-                                                    {topic.title}
-                                                </Badge>
-                                            ))}
+                                            {question.topicIds?.map((topicId) => {
+                                                const topic = topics.find(t => t.id === topicId);
+                                                return topic ? (
+                                                    <Badge key={topicId} variant="secondary">
+                                                        {topic.title}
+                                                    </Badge>
+                                                ) : null;
+                                            })}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -283,52 +286,51 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                         
                                         <div>
                                             <h3 className="text-sm font-medium text-muted-foreground mb-1">Question Text</h3>
-                                            <p className="text-lg">{selectedQuestion.text}</p>
+                                            <p className="text-lg">{selectedQuestion.questionText || 'No text'}</p>
                                         </div>
 
-                                        {selectedQuestion.imageUrl && (
+                                        <div>
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Type</h3>
+                                            <Badge variant="outline">{selectedQuestion.type || 'Unknown'}</Badge>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Points</h3>
+                                            <p className="text-lg">{selectedQuestion.points || 0}</p>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Time Limit</h3>
+                                            <p className="text-lg">{selectedQuestion.timeLimitSeconds || 0} seconds</p>
+                                        </div>
+
+                                        {selectedQuestion.explanation && (
                                             <div>
-                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Question Image</h3>
-                                                <div className="relative h-40 rounded-lg border overflow-hidden">
-                                                    <Image
-                                                        src={selectedQuestion.imageUrl}
-                                                        alt="Question"
-                                                        fill
-                                                        className="object-contain"
-                                                    />
-                                                </div>
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Explanation</h3>
+                                                <p className="text-lg">{selectedQuestion.explanation}</p>
                                             </div>
                                         )}
 
                                         <div>
                                             <h3 className="text-sm font-medium text-muted-foreground mb-1">Topics</h3>
                                             <div className="flex flex-wrap gap-1">
-                                                {selectedQuestion.topics.map((topic) => (
-                                                    <Badge key={topic.id} variant="secondary">
-                                                        {topic.title}
-                                                    </Badge>
-                                                ))}
+                                                {selectedQuestion.topicIds?.map((topicId) => {
+                                                    const topic = topics.find(t => t.id === topicId);
+                                                    return topic ? (
+                                                        <Badge key={topicId} variant="secondary">
+                                                            {topic.title}
+                                                        </Badge>
+                                                    ) : null;
+                                                })}
                                             </div>
                                         </div>
 
                                         <div>
-                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Options</h3>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {selectedQuestion.options.map((option) => (
-                                                    <div
-                                                        key={option.key}
-                                                        className={`p-2 rounded-lg border ${
-                                                            option.key === selectedQuestion.answerKey
-                                                                ? "border-green-500 bg-green-50"
-                                                                : ""
-                                                        }`}
-                                                    >
-                            <span className="font-semibold mr-2">
-                              {String.fromCharCode(64 + option.key)}:
-                            </span>
-                                                        {option.text}
-                                                    </div>
-                                                ))}
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Content</h3>
+                                            <div className="p-4 bg-gray-50 rounded-lg">
+                                                <pre className="text-sm whitespace-pre-wrap">
+                                                    {JSON.stringify(selectedQuestion.content || {}, null, 2)}
+                                                </pre>
                                             </div>
                                         </div>
                                     </>

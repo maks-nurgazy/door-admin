@@ -38,6 +38,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Question, questionsApi } from "@/lib/api/questions";
+import { TopicShortDto } from "@/lib/api/topics";
 import {
     Select,
     SelectContent,
@@ -55,9 +56,10 @@ type SectionFormValues = z.infer<typeof sectionSchema>;
 
 interface SectionsTableProps {
     initialData: SectionsResponse;
+    topics: TopicShortDto[];
 }
 
-export function SectionsTable({ initialData }: SectionsTableProps) {
+export function SectionsTable({ initialData, topics }: SectionsTableProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -462,14 +464,17 @@ export function SectionsTable({ initialData }: SectionsTableProps) {
                                             onClick={() => toggleQuestionSelection(question.id)}
                                         >
                                             <div className="flex-1">
-                                                <p className="font-medium">{question.text}</p>
+                                                <p className="font-medium">{question.questionText}</p>
                                                 <div className="flex gap-2 mt-1">
                                                     <Badge variant="outline">{question.type}</Badge>
-                                                    {question.topics.map((topic) => (
-                                                        <Badge key={topic.id} variant="secondary">
-                                                            {topic.title}
-                                                        </Badge>
-                                                    ))}
+                                                    {question.topicIds?.map((topicId) => {
+                                                        const topic = topics.find(t => t.id === topicId);
+                                                        return topic ? (
+                                                            <Badge key={topicId} variant="secondary">
+                                                                {topic.title}
+                                                            </Badge>
+                                                        ) : null;
+                                                    })}
                                                 </div>
                                             </div>
                                             <input

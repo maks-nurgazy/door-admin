@@ -2,8 +2,12 @@ import axios from 'axios';
 import {api} from "@/lib/axios";
 
 export interface QuestionOption {
-    key: number;
-    text: string;
+    id: number;
+    text?: string;
+    textLatex?: string;
+    firstWord?: string;
+    secondWord?: string;
+    relationship?: string;
 }
 
 export interface QuestionTopic {
@@ -11,14 +15,49 @@ export interface QuestionTopic {
     title: string;
 }
 
+// Content interfaces for different question types
+export interface AnalogyContent {
+    examplePair: {
+        id: number;
+        firstWord: string;
+        secondWord: string;
+        relationship: string;
+    };
+    correctAnswer: number;
+    options: QuestionOption[];
+    relationshipType: string;
+}
+
+export interface ComparisonContent {
+    columnALatex: string;
+    columnBLatex: string;
+    correctAnswer: number;
+    infoText?: string;
+    imageUrl?: string;
+    options: QuestionOption[];
+}
+
+export interface MathCalculationContent {
+    descriptionLatex: string;
+    correctAnswer: number;
+    options: QuestionOption[];
+}
+
+export interface SentenceCompletionContent {
+    sentence: string;
+    correctAnswer: number;
+    options: QuestionOption[];
+}
+
 export interface Question {
     id: number;
-    text: string;
-    imageUrl: string | null;
-    options: QuestionOption[];
-    answerKey: number;
-    type: 'TEXT' | 'IMAGE';
-    topics: QuestionTopic[];
+    questionText: string;
+    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
+    topicIds: number[];
+    points: number;
+    timeLimitSeconds: number;
+    explanation: string;
+    content: AnalogyContent | ComparisonContent | MathCalculationContent | SentenceCompletionContent;
     createdAt: string;
 }
 
@@ -41,12 +80,13 @@ export interface QuestionFilters {
 }
 
 export interface CreateQuestionDto {
-    text: string;
-    imageUrl?: string | null;
-    options: QuestionOption[];
-    answerKey: number;
-    type: 'TEXT' | 'IMAGE';
+    questionText: string;
+    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
     topicIds: number[];
+    points: number;
+    timeLimitSeconds: number;
+    explanation: string;
+    content: AnalogyContent | ComparisonContent | MathCalculationContent | SentenceCompletionContent;
 }
 
 export const questionsApi = {

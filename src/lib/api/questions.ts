@@ -49,16 +49,26 @@ export interface SentenceCompletionContent {
     options: QuestionOption[];
 }
 
+export interface QuestionTopic {
+    id: number;
+    title: string;
+}
+
 export interface Question {
     id: number;
     questionText: string;
     type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
-    topicIds: number[];
     points: number;
     timeLimitSeconds: number;
-    explanation: string;
-    content: AnalogyContent | ComparisonContent | MathCalculationContent | SentenceCompletionContent;
+    topics: QuestionTopic[];
+    topicCount: number;
     createdAt: string;
+    updatedAt: string;
+
+    // These fields are used for form operations
+    topicIds?: number[];
+    explanation?: string;
+    content?: AnalogyContent | ComparisonContent | MathCalculationContent | SentenceCompletionContent;
 }
 
 export interface QuestionsResponse {

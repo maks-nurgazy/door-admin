@@ -141,12 +141,14 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                     <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>ID</TableHead>
+                            <TableHead className="w-[80px]">ID</TableHead>
                             <TableHead>Question</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Topics</TableHead>
-                            <TableHead>Created At</TableHead>
-                            <TableHead>Actions</TableHead>
+                            <TableHead className="w-[140px]">Type</TableHead>
+                            <TableHead className="w-[120px]">Points</TableHead>
+                            <TableHead className="w-[100px]">Time</TableHead>
+                            <TableHead className="w-[200px]">Topics</TableHead>
+                            <TableHead className="w-[140px]">Created</TableHead>
+                            <TableHead className="w-[130px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -156,7 +158,9 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                     <TableCell><Skeleton className="h-4 w-[60px]" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-[300px]" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-[60px]" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
@@ -179,16 +183,32 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                     <TableCell>
                                         <Badge variant="outline">{question.type || 'Unknown'}</Badge>
                                     </TableCell>
+                                    <TableCell className="text-center">
+                                        <div className="flex items-center justify-center">
+                                            <span className="font-semibold text-primary">{question.points || 0}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <div className="text-sm text-muted-foreground">
+                                            {question.timeLimitSeconds || 0}s
+                                        </div>
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
-                                            {question.topicIds?.map((topicId) => {
-                                                const topic = topics.find(t => t.id === topicId);
-                                                return topic ? (
-                                                    <Badge key={topicId} variant="secondary">
+                                            {question.topics && question.topics.length > 0 ? (
+                                                question.topics.slice(0, 2).map((topic) => (
+                                                    <Badge key={topic.id} variant="secondary" className="text-xs">
                                                         {topic.title}
                                                     </Badge>
-                                                ) : null;
-                                            })}
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">No topics</span>
+                                            )}
+                                            {question.topicCount > 2 && (
+                                                <Badge variant="outline" className="text-xs">
+                                                    +{question.topicCount - 2}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -211,28 +231,43 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleView(question)}
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleEdit(question)}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDelete(question)}
-                                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleView(question)}
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>View details</TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleEdit(question)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Edit question</TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDelete(question)}
+                                                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Delete question</TooltipContent>
+                                            </Tooltip>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -274,7 +309,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                             <div className="space-y-4 p-4">
                                 {selectedQuestion && (
                                     <>
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between border-b pb-4">
                                             <div>
                                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Question ID</h3>
                                                 <p className="text-lg font-mono">#{selectedQuestion.id}</p>
@@ -282,47 +317,63 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                             <div className="text-right">
                                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Created</h3>
                                                 <p className="text-sm text-muted-foreground">{formatDateBeautiful(selectedQuestion.createdAt)}</p>
+                                                {selectedQuestion.updatedAt && selectedQuestion.updatedAt !== selectedQuestion.createdAt && (
+                                                    <>
+                                                        <h3 className="text-sm font-medium text-muted-foreground mb-1 mt-2">Updated</h3>
+                                                        <p className="text-sm text-muted-foreground">{formatDateBeautiful(selectedQuestion.updatedAt)}</p>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
-                                        
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Type</h3>
+                                                <Badge variant="outline" className="text-sm">{selectedQuestion.type || 'Unknown'}</Badge>
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Points</h3>
+                                                <p className="text-lg font-semibold text-primary">{selectedQuestion.points || 0}</p>
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Time Limit</h3>
+                                                <p className="text-lg">{selectedQuestion.timeLimitSeconds || 0} <span className="text-sm text-muted-foreground">seconds</span></p>
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Topic Count</h3>
+                                                <p className="text-lg">{selectedQuestion.topicCount || 0}</p>
+                                            </div>
+                                        </div>
+
                                         <div>
                                             <h3 className="text-sm font-medium text-muted-foreground mb-1">Question Text</h3>
-                                            <p className="text-lg">{selectedQuestion.questionText || 'No text'}</p>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Type</h3>
-                                            <Badge variant="outline">{selectedQuestion.type || 'Unknown'}</Badge>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Points</h3>
-                                            <p className="text-lg">{selectedQuestion.points || 0}</p>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Time Limit</h3>
-                                            <p className="text-lg">{selectedQuestion.timeLimitSeconds || 0} seconds</p>
+                                            <p className="text-lg p-3 bg-muted rounded-md">{selectedQuestion.questionText || 'No text'}</p>
                                         </div>
 
                                         {selectedQuestion.explanation && (
                                             <div>
                                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Explanation</h3>
-                                                <p className="text-lg">{selectedQuestion.explanation}</p>
+                                                <p className="text-sm p-3 bg-muted rounded-md">{selectedQuestion.explanation}</p>
                                             </div>
                                         )}
 
                                         <div>
-                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Topics</h3>
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                                                Topics ({selectedQuestion.topicCount || 0})
+                                            </h3>
                                             <div className="flex flex-wrap gap-1">
-                                                {selectedQuestion.topicIds?.map((topicId) => {
-                                                    const topic = topics.find(t => t.id === topicId);
-                                                    return topic ? (
-                                                        <Badge key={topicId} variant="secondary">
+                                                {selectedQuestion.topics && selectedQuestion.topics.length > 0 ? (
+                                                    selectedQuestion.topics.map((topic) => (
+                                                        <Badge key={topic.id} variant="secondary">
                                                             {topic.title}
                                                         </Badge>
-                                                    ) : null;
-                                                })}
+                                                    ))
+                                                ) : (
+                                                    <span className="text-xs text-muted-foreground">No topics assigned</span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -380,9 +431,10 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                             <div className="mt-4 p-4 rounded-lg bg-muted">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="text-xs font-mono text-muted-foreground">#{selectedQuestion.id}</span>
+                                    <Badge variant="outline">{selectedQuestion.type}</Badge>
                                 </div>
                                 <div className="text-sm font-medium">
-                                    {selectedQuestion.text}
+                                    {selectedQuestion.questionText}
                                 </div>
                             </div>
                         )}

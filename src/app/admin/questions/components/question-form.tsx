@@ -36,8 +36,8 @@ const questionSchema = z.object({
     questionText: z.string().min(3, "Question text must be at least 3 characters"),
     type: z.enum(["ANALOGY", "COMPARISON", "MATH_CALCULATION", "SENTENCE_COMPLETION"]),
     topicIds: z.array(z.number()).min(1, "At least one topic is required"),
-    points: z.number().min(1, "Points must be at least 1"),
-    timeLimitSeconds: z.number().min(1, "Time limit must be at least 1 second"),
+    points: z.coerce.number().min(1, "Points must be at least 1"),
+    timeLimitSeconds: z.coerce.number().min(1, "Time limit must be at least 1 second"),
     explanation: z.string(),
     content: z.any(), // Will be validated by specific form components
 });

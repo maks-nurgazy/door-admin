@@ -1,15 +1,15 @@
 "use client";
 
-import { Suspense } from "react";
-import { QuestionsTable } from "./components/questions-table";
-import { QuestionsHeader } from "./components/questions-header";
-import { QuestionsFilters } from "./components/questions-filters";
-import { questionsApi } from "@/lib/api/questions";
-import { sectionsApi } from "@/lib/api/sections";
-import { topicsApi } from "@/lib/api/topics";
+import {Suspense} from "react";
+import {QuestionsTable} from "./components/questions-table";
+import {QuestionsHeader} from "./components/questions-header";
+import {QuestionsFilters} from "./components/questions-filters";
+import {questionsApi} from "@/lib/api/questions";
+import {sectionsApi} from "@/lib/api/sections";
+import {topicsApi} from "@/lib/api/topics";
 import Loading from "./loading";
-import { useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import {useEffect, useState, useCallback} from "react";
+import {useSearchParams} from "next/navigation";
 
 export default function QuestionsPage() {
     const searchParams = useSearchParams();
@@ -29,11 +29,11 @@ export default function QuestionsPage() {
             const filters = {
                 search: searchParams.get("search") || undefined,
                 page: searchParams.get("page") ? parseInt(searchParams.get("page")!) - 1 : 0,
-                topicId: searchParams.get("topic") && searchParams.get("topic") !== "all" 
-                    ? parseInt(searchParams.get("topic")!) 
+                topicId: searchParams.get("topic") && searchParams.get("topic") !== "all"
+                    ? parseInt(searchParams.get("topic")!)
                     : undefined,
-                sectionId: searchParams.get("section") && searchParams.get("section") !== "all" 
-                    ? parseInt(searchParams.get("section")!) 
+                sectionId: searchParams.get("section") && searchParams.get("section") !== "all"
+                    ? parseInt(searchParams.get("section")!)
                     : undefined,
                 sortBy: searchParams.get("sortBy") || "createdAt",
                 sortOrder: (searchParams.get("sortOrder") as 'asc' | 'desc') || "desc",
@@ -67,28 +67,28 @@ export default function QuestionsPage() {
     }, [loadData]);
 
     if (isLoading) {
-        return <Loading />;
+        return <Loading/>;
     }
 
     return (
         <div className="space-y-6">
-            <QuestionsHeader 
-                topics={data.topics} 
+            <QuestionsHeader
+                topics={data.topics}
                 onSuccess={handleSuccess}
             />
             <Suspense fallback={<div className="flex gap-4">
-                <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md" />
-                <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md" />
-                <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md" />
+                <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md"/>
+                <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md"/>
+                <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md"/>
             </div>}>
-                <QuestionsFilters sections={data.sections} topics={data.topics} />
+                <QuestionsFilters sections={data.sections} topics={data.topics}/>
             </Suspense>
-            <Suspense fallback={<Loading />}>
+            <Suspense fallback={<Loading/>}>
                 {data.questions && (
-                    <QuestionsTable 
+                    <QuestionsTable
                         key={`questions-${data.questions.currentPage}-${data.questions.totalItems}`}
-                        initialData={data.questions} 
-                        topics={data.topics} 
+                        initialData={data.questions}
+                        topics={data.topics}
                     />
                 )}
             </Suspense>

@@ -1,4 +1,6 @@
 // lib/auth.ts
+// Admin Authentication Configuration for NextAuth.js
+// Uses the /admin/auth endpoints for admin-only authentication
 import {NextAuthOptions} from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
@@ -24,9 +26,10 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    // POST /auth/login/username
+                    // POST /admin/auth/login - Admin authentication endpoint
+                    // Only users with SUPER_ADMIN role can authenticate here
                     const res = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/auth/login/username`,
+                        `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/admin/auth/login`,
                         {
                             method: "POST",
                             headers: {"Content-Type": "application/json"},
@@ -150,8 +153,9 @@ export const authOptions: NextAuthOptions = {
  */
 async function refreshAccessToken(token: any) {
     try {
+        // POST /admin/auth/refresh-token - Admin token refresh endpoint
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/auth/refresh`,
+            `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/admin/auth/refresh-token`,
             {
                 headers: {"Content-Type": "application/json"},
                 method: "POST",

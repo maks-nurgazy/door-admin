@@ -7,6 +7,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { useState } from "react";
@@ -217,6 +218,7 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Add New Test</DialogTitle>
+                        <DialogDescription>Create a new test with details and settings</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -338,6 +339,9 @@ export function SectionsTable({ initialData, topics }: SectionsTableProps) {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Section Details</DialogTitle>
+                            <DialogDescription>
+                                View the details of this section including its title, duration, and number of questions.
+                            </DialogDescription>
                         </DialogHeader>
                         {selectedSection && (
                             <div className="space-y-4">
@@ -363,6 +367,9 @@ export function SectionsTable({ initialData, topics }: SectionsTableProps) {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Edit Section</DialogTitle>
+                            <DialogDescription>
+                                Update the section title and duration. Click save when you're done.
+                            </DialogDescription>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -414,6 +421,9 @@ export function SectionsTable({ initialData, topics }: SectionsTableProps) {
                     <DialogContent className="max-w-3xl">
                         <DialogHeader>
                             <DialogTitle>Assign Questions to {selectedSection?.title}</DialogTitle>
+                            <DialogDescription>
+                                Select questions to assign to this section. You can search and filter by topic.
+                            </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                             <div className="flex items-center gap-4">

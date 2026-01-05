@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { UserTestAccessForm } from "./user-test-access-form";
 
 interface UserTestAccessHeaderProps {
@@ -27,6 +27,7 @@ export function UserTestAccessHeader({ onSuccess }: UserTestAccessHeaderProps) {
                     <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Grant Test Access to User</DialogTitle>
+                            <DialogDescription>Assign test access permissions to a specific user</DialogDescription>
                         </DialogHeader>
                         <div className="flex-1 overflow-y-auto px-1">
                             <UserTestAccessForm

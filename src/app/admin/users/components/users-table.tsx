@@ -4,7 +4,7 @@ import {useState} from "react";
 import {useRouter, useSearchParams} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
-import {Dialog, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,} from "@/components/ui/dialog";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
@@ -188,6 +188,7 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Edit User Details</DialogTitle>
+                            <DialogDescription>Update user information and settings</DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
@@ -272,6 +273,7 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                     <DialogContent className="max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>User Details</DialogTitle>
+                            <DialogDescription>View complete information about this user</DialogDescription>
                         </DialogHeader>
                         {selectedUser && (
                             <div className="grid gap-6 py-4">

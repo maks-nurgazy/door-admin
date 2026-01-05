@@ -10,6 +10,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import {
     AlertDialog,
@@ -268,6 +269,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                     <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Question Details</DialogTitle>
+                            <DialogDescription>View complete information about this question</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="flex-1">
                             <div className="space-y-4 p-4">
@@ -344,6 +346,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                     <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Edit Question</DialogTitle>
+                            <DialogDescription>Update the question details and settings</DialogDescription>
                         </DialogHeader>
                         <div className="flex-1 overflow-y-auto px-1">
                             {selectedQuestion && (

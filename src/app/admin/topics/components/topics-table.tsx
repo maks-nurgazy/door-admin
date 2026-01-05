@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -47,7 +48,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const topicSchema = z.object({
-    title: z.string().min(3, "Title must be at least 3 characters").max(50, "Title must be less than 50 characters"),
+    title: z.string().min(3, "Title must be at least 3 characters").max(255, "Title must be less than 255 characters"),
 });
 
 type TopicFormValues = z.infer<typeof topicSchema>;
@@ -265,6 +266,9 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Topic Details</DialogTitle>
+                            <DialogDescription>
+                                View the details of this topic and its associated sections.
+                            </DialogDescription>
                         </DialogHeader>
                         {selectedTopic && (
                             <div className="space-y-4">
@@ -299,6 +303,9 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Edit Topic</DialogTitle>
+                            <DialogDescription>
+                                Update the topic title. Click save when you're done.
+                            </DialogDescription>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

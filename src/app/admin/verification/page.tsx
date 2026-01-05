@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -106,6 +107,7 @@ export default function VerificationDashboard() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit User Details</DialogTitle>
+          <DialogDescription>Update user information and verification status</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">

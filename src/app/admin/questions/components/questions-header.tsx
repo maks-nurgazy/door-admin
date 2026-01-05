@@ -3,7 +3,7 @@
 import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Plus, Upload} from "lucide-react";
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger,} from "@/components/ui/dialog";
 import {useRouter} from "next/navigation";
 import {Question, questionsApi} from "@/lib/api/questions";
 import {TopicShortDto} from "@/lib/api/topics";
@@ -67,6 +67,7 @@ export function QuestionsHeader({mode = 'create', question, onClose, onSuccess, 
                     <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Add New Question</DialogTitle>
+                            <DialogDescription>Create a new question for your question bank</DialogDescription>
                         </DialogHeader>
                         <div className="flex-1 overflow-y-auto px-1">
                             <QuestionForm

@@ -5,7 +5,7 @@ import Image from "next/image";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
-import {Dialog, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@/components/ui/dialog";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
@@ -231,6 +231,9 @@ export function UsersTable({pageData}: { pageData: any }) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Edit User Details</DialogTitle>
+                        <DialogDescription>
+                            Update user information. Click save when you're done.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
@@ -276,6 +279,9 @@ export function UsersTable({pageData}: { pageData: any }) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Payment Receipt</DialogTitle>
+                        <DialogDescription>
+                            View the payment receipt submitted by the user.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         {selectedUser?.paymentReceipt ? (

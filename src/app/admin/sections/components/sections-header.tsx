@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -68,6 +69,9 @@ export function SectionsHeader() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Add New Section</DialogTitle>
+                        <DialogDescription>
+                            Create a new section by providing a title and duration in minutes.
+                        </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

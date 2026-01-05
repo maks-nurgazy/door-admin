@@ -9,6 +9,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import {
     Table,
@@ -270,6 +271,7 @@ export function TestsTable({ initialData }: TestsTableProps) {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Test Details</DialogTitle>
+                            <DialogDescription>View complete information about this test</DialogDescription>
                         </DialogHeader>
                         {selectedTest && (
                             <div className="space-y-4">
@@ -315,6 +317,7 @@ export function TestsTable({ initialData }: TestsTableProps) {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Edit Test</DialogTitle>
+                            <DialogDescription>Update test details and settings</DialogDescription>
                         </DialogHeader>
                         {selectedTest && (
                             <TestsHeader
@@ -333,6 +336,7 @@ export function TestsTable({ initialData }: TestsTableProps) {
                     <DialogContent className="max-w-3xl">
                         <DialogHeader>
                             <DialogTitle>Manage Test Sections</DialogTitle>
+                            <DialogDescription>Assign or remove sections for this test</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                             <ScrollArea className="h-[400px] rounded-md border p-4">

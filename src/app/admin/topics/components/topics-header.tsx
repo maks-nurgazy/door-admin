@@ -2,7 +2,7 @@
 
 import {Button} from "@/components/ui/button";
 import {Plus} from "lucide-react";
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog";
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {topicsApi} from "@/lib/api/topics";
@@ -13,7 +13,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage,} from "@
 import {Input} from "@/components/ui/input";
 
 const topicSchema = z.object({
-    title: z.string().min(3, "Title must be at least 3 characters").max(50, "Title must be less than 50 characters"),
+    title: z.string().min(3, "Title must be at least 3 characters").max(255, "Title must be less than 255 characters"),
 });
 
 type TopicFormValues = z.infer<typeof topicSchema>;
@@ -53,6 +53,9 @@ export function TopicsHeader() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Add New Topic</DialogTitle>
+                        <DialogDescription>
+                            Create a new topic by providing a descriptive title.
+                        </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

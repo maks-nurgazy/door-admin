@@ -83,22 +83,64 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
     const handleSubmit = async (data: QuestionFormValues) => {
         setIsSubmitting(true);
         try {
+            console.log('=== Question Form Submission Debug ===');
+            console.log('Form data:', data);
+            console.log('Content state:', content);
+
+            // Validate that content exists
+            if (!content) {
+                const errorMsg = "Please fill in the question content fields and click 'Update' button";
+                console.error('Validation error:', errorMsg);
+                toast({
+                    title: "Validation Error",
+                    description: errorMsg,
+                    variant: "destructive",
+                });
+                throw new Error(errorMsg);
+            }
+
+            if (!content.correctAnswer) {
+                const errorMsg = "Please select a correct answer";
+                console.error('Validation error:', errorMsg);
+                toast({
+                    title: "Validation Error",
+                    description: errorMsg,
+                    variant: "destructive",
+                });
+                throw new Error(errorMsg);
+            }
+
+            // Prepare data matching backend DTO structure
             const submitData = {
                 ...data,
-                content: content
+                content: JSON.stringify(content), // Convert entire content to JSON string (includes correctAnswer)
+                correctAnswer: content.correctAnswer // Also send as separate top-level field
             };
+
+            console.log('Prepared submit data:', submitData);
+            console.log('Content JSON string:', submitData.content);
+
             await onSubmit(submitData);
+
             toast({
                 title: "Success",
                 description: mode === 'edit' ? "Question updated successfully!" : "Question created successfully!",
             });
         } catch (error) {
-            console.error('Failed to submit question:', error);
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "Failed to save question. Please try again.",
-                variant: "destructive",
-            });
+            console.error('=== Question Form Submission Error ===');
+            console.error('Error details:', error);
+
+            // Only show toast if we haven't already shown a validation toast
+            if (error instanceof Error && !error.message.includes('Please fill in') && !error.message.includes('Please select')) {
+                toast({
+                    title: "Error",
+                    description: error instanceof Error ? error.message : "Failed to save question. Please try again.",
+                    variant: "destructive",
+                });
+            }
+
+            // Re-throw to prevent form from thinking submission succeeded
+            throw error;
         } finally {
             setIsSubmitting(false);
         }

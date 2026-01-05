@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -71,6 +72,19 @@ export function AnalogyForm({ content, onChange }: AnalogyFormProps) {
             relationshipType: "",
         },
     });
+
+    // Auto-update parent whenever form values change
+    const watchedValues = form.watch();
+    const prevValuesRef = React.useRef<string>('');
+
+    React.useEffect(() => {
+        const currentValues = JSON.stringify(watchedValues);
+        // Only update if values actually changed to prevent infinite loops
+        if (currentValues !== prevValuesRef.current) {
+            prevValuesRef.current = currentValues;
+            onChange(watchedValues);
+        }
+    }, [watchedValues]);
 
     const handleSubmit = (data: AnalogyFormValues) => {
         onChange(data);
@@ -215,8 +229,6 @@ export function AnalogyForm({ content, onChange }: AnalogyFormProps) {
                         </FormItem>
                     )}
                 />
-
-                <Button type="button" onClick={form.handleSubmit(handleSubmit)}>Update Analogy</Button>
             </div>
         </Form>
     );

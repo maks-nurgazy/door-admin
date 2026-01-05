@@ -79,7 +79,8 @@ export interface QuestionFilters {
     sortOrder?: 'asc' | 'desc';
 }
 
-export interface CreateQuestionDto {
+// Internal form DTO (used within components)
+export interface QuestionFormDto {
     questionText: string;
     type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
     topicIds: number[];
@@ -87,6 +88,18 @@ export interface CreateQuestionDto {
     timeLimitSeconds: number;
     explanation: string;
     content: AnalogyContent | ComparisonContent | MathCalculationContent | SentenceCompletionContent;
+}
+
+// API request DTO (sent to backend)
+export interface CreateQuestionDto {
+    questionText: string;
+    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
+    topicIds: number[];
+    points: number;
+    timeLimitSeconds: number;
+    explanation: string;
+    content: string; // JSON string - matches backend expectation
+    correctAnswer: number; // Separate field as expected by backend
 }
 
 export const questionsApi = {

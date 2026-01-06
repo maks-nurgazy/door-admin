@@ -53,9 +53,15 @@ interface QuestionFormProps {
 }
 
 export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCancel }: QuestionFormProps) {
-    const [selectedTopics, setSelectedTopics] = useState<number[]>(
-        question ? question.topicIds : []
-    );
+    // Extract topic IDs from either topicIds array or topics array
+    const getTopicIds = (q?: Question): number[] => {
+        if (!q) return [];
+        if (q.topicIds && q.topicIds.length > 0) return q.topicIds;
+        if (q.topics && q.topics.length > 0) return q.topics.map(t => t.id);
+        return [];
+    };
+
+    const [selectedTopics, setSelectedTopics] = useState<number[]>(getTopicIds(question));
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [content, setContent] = useState<any>(question?.content);
 
@@ -64,10 +70,10 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
         defaultValues: question ? {
             questionText: question.questionText,
             type: question.type,
-            topicIds: question.topicIds,
+            topicIds: getTopicIds(question),
             points: question.points,
             timeLimitSeconds: question.timeLimitSeconds,
-            explanation: question.explanation,
+            explanation: question.explanation || "",
             content: question.content,
         } : {
             questionText: "",

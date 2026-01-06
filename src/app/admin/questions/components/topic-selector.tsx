@@ -21,6 +21,9 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
     const [topicSearch, setTopicSearch] = useState("");
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // Ensure selectedTopics is always an array
+    const safeSelectedTopics = selectedTopics || [];
+
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -35,9 +38,9 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
     }, []);
 
     const toggleTopic = (topicId: number) => {
-        const newTopics = selectedTopics.includes(topicId)
-            ? selectedTopics.filter(id => id !== topicId)
-            : [...selectedTopics, topicId];
+        const newTopics = safeSelectedTopics.includes(topicId)
+            ? safeSelectedTopics.filter(id => id !== topicId)
+            : [...safeSelectedTopics, topicId];
 
         onChange(newTopics);
         onTopicsChange(newTopics);
@@ -58,9 +61,9 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
                     className="w-full justify-between"
                     onClick={() => setIsTopicsOpen(!isTopicsOpen)}
                 >
-          <span className={selectedTopics.length === 0 ? "text-muted-foreground" : undefined}>
-            {selectedTopics.length > 0
-                ? `${selectedTopics.length} topic${selectedTopics.length === 1 ? "" : "s"} selected`
+          <span className={safeSelectedTopics.length === 0 ? "text-muted-foreground" : undefined}>
+            {safeSelectedTopics.length > 0
+                ? `${safeSelectedTopics.length} topic${safeSelectedTopics.length === 1 ? "" : "s"} selected`
                 : "Select topics"}
           </span>
                     <Plus className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -88,7 +91,7 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
                                             key={topic.id}
                                             className={cn(
                                                 "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                                                selectedTopics.includes(topic.id) && "bg-accent"
+                                                safeSelectedTopics.includes(topic.id) && "bg-accent"
                                             )}
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -98,7 +101,7 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
                                             <Check
                                                 className={cn(
                                                     "mr-2 h-4 w-4",
-                                                    selectedTopics.includes(topic.id) ? "opacity-100" : "opacity-0"
+                                                    safeSelectedTopics.includes(topic.id) ? "opacity-100" : "opacity-0"
                                                 )}
                                             />
                                             <span>{topic.title}</span>
@@ -110,9 +113,9 @@ export function TopicSelector({ topics, selectedTopics, onChange, onTopicsChange
                     </div>
                 )}
             </div>
-            {selectedTopics.length > 0 && (
+            {safeSelectedTopics.length > 0 && (
                 <div className="flex gap-1 flex-wrap mt-2">
-                    {selectedTopics.map((topicId) => {
+                    {safeSelectedTopics.map((topicId) => {
                         const topic = topics.find((t) => t.id === topicId);
                         return topic ? (
                             <Badge

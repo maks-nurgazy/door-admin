@@ -49,15 +49,32 @@ export interface SentenceCompletionContent {
     options: QuestionOption[];
 }
 
+export interface ReadingComprehensionContent {
+    questionText: string;
+    correctAnswer: number;
+    options: QuestionOption[];
+}
+
+// Union type for all question content types
+export type QuestionContentType =
+    | AnalogyContent
+    | ComparisonContent
+    | MathCalculationContent
+    | SentenceCompletionContent
+    | ReadingComprehensionContent;
+
 export interface QuestionTopic {
     id: number;
     title: string;
 }
 
+// All supported question types
+export type QuestionTypeEnum = 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION' | 'READING_COMPREHENSION';
+
 export interface Question {
     id: number;
     questionText: string;
-    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
+    type: QuestionTypeEnum;
     points: number;
     timeLimitSeconds: number;
     topics: QuestionTopic[];
@@ -68,13 +85,13 @@ export interface Question {
     // These fields are used for form operations
     topicIds?: number[];
     explanation?: string;
-    content?: AnalogyContent | ComparisonContent | MathCalculationContent | SentenceCompletionContent;
+    content?: QuestionContentType;
 }
 
 // Full question details returned from GET /admin/questions/{id}
 export interface QuestionDetail {
     id: number;
-    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
+    type: QuestionTypeEnum;
     questionText: string;
     content: string; // JSON string from backend
     points: number;

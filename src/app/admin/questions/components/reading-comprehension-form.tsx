@@ -21,10 +21,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { SentenceCompletionContent } from "@/lib/api/questions";
 
-const sentenceSchema = z.object({
-    sentence: z.string().min(1, "Sentence is required"),
+// Content interface for Reading Comprehension
+export interface ReadingComprehensionContent {
+    questionText: string;
+    correctAnswer: number;
+    options: { id: number; text: string }[];
+}
+
+const readingComprehensionSchema = z.object({
+    questionText: z.string().min(1, "Question text is required"),
     correctAnswer: z.number().min(1, "Correct answer is required"),
     options: z.array(z.object({
         id: z.number(),
@@ -32,22 +38,22 @@ const sentenceSchema = z.object({
     })).min(2, "At least 2 options are required"),
 });
 
-export type SentenceFormValues = z.infer<typeof sentenceSchema>;
+export type ReadingComprehensionFormValues = z.infer<typeof readingComprehensionSchema>;
 
-interface SentenceFormProps {
-    content?: SentenceCompletionContent;
-    onChange: (content: SentenceCompletionContent) => void;
+interface ReadingComprehensionFormProps {
+    content?: ReadingComprehensionContent;
+    onChange: (content: ReadingComprehensionContent) => void;
 }
 
-export function SentenceForm({ content, onChange }: SentenceFormProps) {
-    const form = useForm<SentenceFormValues>({
-        resolver: zodResolver(sentenceSchema),
+export function ReadingComprehensionForm({ content, onChange }: ReadingComprehensionFormProps) {
+    const form = useForm<ReadingComprehensionFormValues>({
+        resolver: zodResolver(readingComprehensionSchema),
         defaultValues: content ? {
-            sentence: content.sentence,
+            questionText: content.questionText,
             correctAnswer: content.correctAnswer,
             options: content.options,
         } : {
-            sentence: "",
+            questionText: "",
             correctAnswer: 1,
             options: [
                 { id: 1, text: "" },
@@ -75,12 +81,12 @@ export function SentenceForm({ content, onChange }: SentenceFormProps) {
             <div className="space-y-4">
                 <FormField
                     control={form.control}
-                    name="sentence"
+                    name="questionText"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Sentence (use ___ for blank)</FormLabel>
+                            <FormLabel>Question Text</FormLabel>
                             <FormControl>
-                                <Textarea {...field} rows={4} />
+                                <Textarea {...field} rows={4} placeholder="Enter the comprehension question..." />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -102,7 +108,7 @@ export function SentenceForm({ content, onChange }: SentenceFormProps) {
                                                 <span className="py-2 w-6">
                                                     {String.fromCharCode(65 + index)}
                                                 </span>
-                                                <Input {...field} />
+                                                <Input {...field} placeholder="Option text" />
                                             </div>
                                         </FormControl>
                                         <FormMessage />

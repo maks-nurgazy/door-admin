@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
     Select,
     SelectContent,
@@ -59,9 +59,17 @@ export function MathForm({ content, onChange }: MathFormProps) {
         },
     });
 
-    const handleSubmit = (data: MathFormValues) => {
-        onChange(data);
-    };
+    // Auto-update parent whenever form values change
+    const watchedValues = form.watch();
+    const prevValuesRef = React.useRef<string>('');
+
+    React.useEffect(() => {
+        const currentValues = JSON.stringify(watchedValues);
+        if (currentValues !== prevValuesRef.current) {
+            prevValuesRef.current = currentValues;
+            onChange(watchedValues);
+        }
+    }, [watchedValues, onChange]);
 
     return (
         <Form {...form}>
@@ -124,7 +132,7 @@ export function MathForm({ content, onChange }: MathFormProps) {
                                 <SelectContent>
                                     {form.watch("options").map((option) => (
                                         <SelectItem key={option.id} value={option.id.toString()}>
-                                            Option {option.id}: {option.textLatex}
+                                            Option {option.id}: {option.textLatex || '(empty)'}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -133,8 +141,6 @@ export function MathForm({ content, onChange }: MathFormProps) {
                         </FormItem>
                     )}
                 />
-
-                <Button type="button" onClick={form.handleSubmit(handleSubmit)}>Update Math Calculation</Button>
             </div>
         </Form>
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
     Select,
     SelectContent,
@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { ComparisonContent } from "@/lib/api/questions";
 import { ImageUpload } from "./image-upload";
-import { useState } from "react";
 
 const comparisonSchema = z.object({
     columnALatex: z.string().min(1, "Column A LaTeX is required"),
@@ -71,9 +70,17 @@ export function ComparisonForm({ content, onChange }: ComparisonFormProps) {
         },
     });
 
-    const handleSubmit = (data: ComparisonFormValues) => {
-        onChange(data);
-    };
+    // Auto-update parent whenever form values change
+    const watchedValues = form.watch();
+    const prevValuesRef = React.useRef<string>('');
+
+    React.useEffect(() => {
+        const currentValues = JSON.stringify(watchedValues);
+        if (currentValues !== prevValuesRef.current) {
+            prevValuesRef.current = currentValues;
+            onChange(watchedValues);
+        }
+    }, [watchedValues, onChange]);
 
     return (
         <Form {...form}>
@@ -191,10 +198,6 @@ export function ComparisonForm({ content, onChange }: ComparisonFormProps) {
                         </FormItem>
                     )}
                 />
-
-                <Button type="button" onClick={form.handleSubmit(handleSubmit)} disabled={isUploading}>
-                    Update Comparison
-                </Button>
             </div>
         </Form>
     );

@@ -21,7 +21,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Question, AnalogyContent, ComparisonContent, MathCalculationContent, SentenceCompletionContent } from "@/lib/api/questions";
 import { TopicShortDto } from "@/lib/api/topics";
 import { TopicSelector } from "./topic-selector";
@@ -29,12 +28,14 @@ import { AnalogyForm } from "./analogy-form";
 import { ComparisonForm } from "./comparison-form";
 import { MathForm } from "./math-form";
 import { SentenceForm } from "./sentence-form";
+import { ReadingComprehensionForm, ReadingComprehensionContent } from "./reading-comprehension-form";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { getQuestionTypes } from "@/lib/question-types";
 
 const questionSchema = z.object({
     questionText: z.string().min(3, "Question text must be at least 3 characters"),
-    type: z.enum(["ANALOGY", "COMPARISON", "MATH_CALCULATION", "SENTENCE_COMPLETION"]),
+    type: z.enum(["ANALOGY", "COMPARISON", "MATH_CALCULATION", "SENTENCE_COMPLETION", "READING_COMPREHENSION"]),
     topicIds: z.array(z.number()).min(1, "At least one topic is required"),
     points: z.coerce.number().min(1, "Points must be at least 1"),
     timeLimitSeconds: z.coerce.number().min(1, "Time limit must be at least 1 second"),
@@ -95,7 +96,7 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
 
             // Validate that content exists
             if (!content) {
-                const errorMsg = "Please fill in the question content fields and click 'Update' button";
+                const errorMsg = "Please fill in the question content fields";
                 console.error('Validation error:', errorMsg);
                 toast({
                     title: "Validation Error",
@@ -182,7 +183,11 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                             <FormLabel>Question Type</FormLabel>
                             <Select
                                 value={field.value}
-                                onValueChange={field.onChange}
+                                onValueChange={(value) => {
+                                    field.onChange(value);
+                                    // Reset content when type changes
+                                    setContent(null);
+                                }}
                             >
                                 <FormControl>
                                     <SelectTrigger>
@@ -190,10 +195,11 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="ANALOGY">Analogy</SelectItem>
-                                    <SelectItem value="COMPARISON">Comparison</SelectItem>
-                                    <SelectItem value="MATH_CALCULATION">Math Calculation</SelectItem>
-                                    <SelectItem value="SENTENCE_COMPLETION">Sentence Completion</SelectItem>
+                                    {getQuestionTypes().map((config) => (
+                                        <SelectItem key={config.type} value={config.type}>
+                                            {config.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -279,6 +285,13 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                 {form.watch("type") === "SENTENCE_COMPLETION" && (
                     <SentenceForm
                         content={content as SentenceCompletionContent}
+                        onChange={handleContentChange}
+                    />
+                )}
+
+                {form.watch("type") === "READING_COMPREHENSION" && (
+                    <ReadingComprehensionForm
+                        content={content as ReadingComprehensionContent}
                         onChange={handleContentChange}
                     />
                 )}

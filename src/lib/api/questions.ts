@@ -71,6 +71,19 @@ export interface Question {
     content?: AnalogyContent | ComparisonContent | MathCalculationContent | SentenceCompletionContent;
 }
 
+// Full question details returned from GET /admin/questions/{id}
+export interface QuestionDetail {
+    id: number;
+    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
+    questionText: string;
+    content: string; // JSON string from backend
+    points: number;
+    timeLimitSeconds: number;
+    explanation: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface QuestionsResponse {
     data: Question[];
     currentPage: number;
@@ -158,6 +171,20 @@ export const questionsApi = {
                 }
             }
             throw new Error('Failed to fetch questions data');
+        }
+    },
+
+    getQuestionById: async (id: number): Promise<QuestionDetail> => {
+        try {
+            const response = await api.get(`/admin/questions/${id}`);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    throw new Error(`Failed to fetch question: ${error.response.data?.message || error.message}`);
+                }
+            }
+            throw new Error('Failed to fetch question details');
         }
     },
 

@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, Pencil, Trash2, Calendar } from "lucide-react";
-import { Question, QuestionsResponse, questionsApi } from "@/lib/api/questions";
+import { Question, QuestionDetail, QuestionsResponse, questionsApi } from "@/lib/api/questions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TopicShortDto } from "@/lib/api/topics";
@@ -58,6 +58,8 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+    const [questionDetail, setQuestionDetail] = useState<QuestionDetail | null>(null);
+    const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
     const currentPage = searchParams.get("page")
         ? parseInt(searchParams.get("page")!) - 1
@@ -98,9 +100,20 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
         }
     };
 
-    const handleView = (question: Question) => {
+    const handleView = async (question: Question) => {
         setSelectedQuestion(question);
         setIsViewDialogOpen(true);
+        setIsLoadingDetail(true);
+        setQuestionDetail(null);
+
+        try {
+            const detail = await questionsApi.getQuestionById(question.id);
+            setQuestionDetail(detail);
+        } catch (error) {
+            console.error('Failed to fetch question details:', error);
+        } finally {
+            setIsLoadingDetail(false);
+        }
     };
 
     const handleEdit = (question: Question) => {
@@ -299,15 +312,26 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                     </div>
                 )}
 
-                <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+                <Dialog open={isViewDialogOpen} onOpenChange={(open) => {
+                    setIsViewDialogOpen(open);
+                    if (!open) {
+                        setQuestionDetail(null);
+                    }
+                }}>
+                    <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Question Details</DialogTitle>
                             <DialogDescription>View complete information about this question</DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="flex-1">
-                            <div className="space-y-4 p-4">
-                                {selectedQuestion && (
+                        <ScrollArea className="flex-1 overflow-y-auto">
+                            <div className="space-y-4 p-4 pr-6">
+                                {isLoadingDetail ? (
+                                    <div className="space-y-4">
+                                        <Skeleton className="h-20 w-full" />
+                                        <Skeleton className="h-40 w-full" />
+                                        <Skeleton className="h-32 w-full" />
+                                    </div>
+                                ) : selectedQuestion && (
                                     <>
                                         <div className="flex items-center justify-between border-b pb-4">
                                             <div>
@@ -353,10 +377,12 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                             <p className="text-lg p-3 bg-muted rounded-md">{selectedQuestion.questionText || 'No text'}</p>
                                         </div>
 
-                                        {selectedQuestion.explanation && (
+                                        {(questionDetail?.explanation || selectedQuestion.explanation) && (
                                             <div>
                                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Explanation</h3>
-                                                <p className="text-sm p-3 bg-muted rounded-md">{selectedQuestion.explanation}</p>
+                                                <p className="text-sm p-3 bg-muted rounded-md">
+                                                    {questionDetail?.explanation || selectedQuestion.explanation}
+                                                </p>
                                             </div>
                                         )}
 
@@ -377,14 +403,27 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Content</h3>
-                                            <div className="p-4 bg-gray-50 rounded-lg">
-                                                <pre className="text-sm whitespace-pre-wrap">
-                                                    {JSON.stringify(selectedQuestion.content || {}, null, 2)}
-                                                </pre>
+                                        {questionDetail?.content && (
+                                            <div>
+                                                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                                                    Question Content (JSON)
+                                                </h3>
+                                                <div className="rounded-lg border overflow-hidden">
+                                                    <div className="overflow-x-auto max-w-full">
+                                                        <pre className="text-xs p-4 font-mono min-w-0">
+                                                            {(() => {
+                                                                try {
+                                                                    const parsed = JSON.parse(questionDetail.content);
+                                                                    return JSON.stringify(parsed, null, 2);
+                                                                } catch {
+                                                                    return questionDetail.content;
+                                                                }
+                                                            })()}
+                                                        </pre>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </>
                                 )}
                             </div>

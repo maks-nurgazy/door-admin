@@ -45,7 +45,7 @@ export function SectionsFilters() {
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (search) {
-                updateFilters({ search });
+                updateFilters({ search: `title:like:${search}` });
             } else {
                 updateFilters({ search: null });
             }
@@ -57,7 +57,7 @@ export function SectionsFilters() {
     return (
         <div className="flex gap-4">
             <Input
-                placeholder="Search sections..."
+                placeholder="Search section templates..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"

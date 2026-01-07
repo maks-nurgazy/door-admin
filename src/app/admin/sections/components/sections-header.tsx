@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { sectionsApi } from "@/lib/api/sections";
+import { sectionTemplatesApi } from "@/lib/api/section-templates";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,54 +23,82 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
+    FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
-const sectionSchema = z.object({
+const MAX_SECTION_TEMPLATES = 10;
+
+const sectionTemplateSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(50, "Title must be less than 50 characters"),
+    description: z.string().max(500, "Description must be less than 500 characters").optional(),
     durationMinutes: z.coerce.number().min(1, "Duration must be at least 1 minute").max(240, "Duration cannot exceed 240 minutes"),
+    displayOrder: z.coerce.number().min(1, "Display order must be at least 1").max(10, "Display order cannot exceed 10").optional(),
+    shuffleQuestions: z.boolean().optional(),
+    numberOfQuestions: z.coerce.number().min(0, "Number of questions must be at least 0").optional(),
 });
 
-type SectionFormValues = z.infer<typeof sectionSchema>;
+type SectionTemplateFormValues = z.infer<typeof sectionTemplateSchema>;
 
-export function SectionsHeader() {
+interface SectionsHeaderProps {
+    currentCount: number;
+}
+
+export function SectionsHeader({ currentCount }: SectionsHeaderProps) {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const router = useRouter();
 
-    const form = useForm<SectionFormValues>({
-        resolver: zodResolver(sectionSchema),
+    const form = useForm<SectionTemplateFormValues>({
+        resolver: zodResolver(sectionTemplateSchema),
         defaultValues: {
             title: "",
+            description: "",
             durationMinutes: 60,
+            displayOrder: currentCount + 1,
+            shuffleQuestions: false,
+            numberOfQuestions: 0,
         },
     });
 
-    const onSubmit = async (data: SectionFormValues) => {
+    const onSubmit = async (data: SectionTemplateFormValues) => {
         try {
-            await sectionsApi.createSection(data);
+            await sectionTemplatesApi.createSectionTemplate(data);
             setIsAddDialogOpen(false);
             form.reset();
             router.refresh();
         } catch (error) {
-            console.error('Failed to create section:', error);
+            console.error('Failed to create section template:', error);
         }
     };
 
+    const isMaxReached = currentCount >= MAX_SECTION_TEMPLATES;
+
     return (
         <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Sections Management</h1>
+            <div>
+                <h1 className="text-3xl font-bold">Section Templates</h1>
+                <p className="text-muted-foreground mt-1">
+                    Predefined sections that will be automatically created for each new test
+                </p>
+                <Badge variant={isMaxReached ? "destructive" : "secondary"} className="mt-2">
+                    {currentCount} / {MAX_SECTION_TEMPLATES} templates
+                </Badge>
+            </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button>
+                    <Button disabled={isMaxReached}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Section
+                        Add Template
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Add New Section</DialogTitle>
+                        <DialogTitle>Add New Section Template</DialogTitle>
                         <DialogDescription>
-                            Create a new section by providing a title and duration in minutes.
+                            Create a predefined section template. When a test is created, sections will be automatically generated from all templates.
                         </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
@@ -90,17 +118,85 @@ export function SectionsHeader() {
                             />
                             <FormField
                                 control={form.control}
-                                name="durationMinutes"
+                                name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Duration (minutes)</FormLabel>
+                                        <FormLabel>Description (Optional)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" {...field} />
+                                            <Textarea
+                                                placeholder="Brief description of this section..."
+                                                className="resize-none"
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="durationMinutes"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Duration (minutes)</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="displayOrder"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Display Order</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="numberOfQuestions"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Expected Questions</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" {...field} />
+                                            </FormControl>
+                                            <FormDescription>
+                                                Number of questions per section
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="shuffleQuestions"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel>Shuffle Questions</FormLabel>
+                                            <FormControl>
+                                                <Switch
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <FormDescription>
+                                                Randomize question order
+                                            </FormDescription>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                             <div className="flex justify-end gap-3">
                                 <Button variant="outline" type="button" onClick={() => {
                                     setIsAddDialogOpen(false);
@@ -109,7 +205,7 @@ export function SectionsHeader() {
                                     Cancel
                                 </Button>
                                 <Button type="submit">
-                                    Add Section
+                                    Add Template
                                 </Button>
                             </div>
                         </form>

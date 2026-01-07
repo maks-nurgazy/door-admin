@@ -12,18 +12,17 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Pencil, Trash2, Eye, ListPlus } from "lucide-react";
+import { Pencil, Trash2, Eye, ListPlus, ChevronRight, BookOpen, Clock, FileQuestion } from "lucide-react";
 import { Test, TestSection, TestsResponse, testsApi } from "@/lib/api/tests";
-import { sectionsApi } from "@/lib/api/sections";
+import { sectionsApi, SectionQuestion } from "@/lib/api/sections";
+import { Question } from "@/lib/api/questions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -47,6 +46,13 @@ export function TestsTable({ initialData }: TestsTableProps) {
     const [testSections, setTestSections] = useState<TestSection[]>([]);
     const [selectedSections, setSelectedSections] = useState<number[]>([]);
     const [isLoadingSections, setIsLoadingSections] = useState(false);
+
+    // New state for accordion view
+    const [expandedTest, setExpandedTest] = useState<string | undefined>(undefined);
+    const [testSectionsData, setTestSectionsData] = useState<Record<number, TestSection[]>>({});
+    const [sectionQuestions, setSectionQuestions] = useState<Record<number, SectionQuestion[]>>({});
+    const [loadingSections, setLoadingSections] = useState<Record<number, boolean>>({});
+    const [loadingQuestions, setLoadingQuestions] = useState<Record<number, boolean>>({});
 
     const currentPage = searchParams.get("page")
         ? parseInt(searchParams.get("page")!) - 1
@@ -97,8 +103,8 @@ export function TestsTable({ initialData }: TestsTableProps) {
             const convertedSections = allSectionsData.map(section => ({
                 id: section.id,
                 title: section.title,
-                durationMinutes: 0, // Default value since SectionShortDto doesn't have this
-                numberOfQuestions: 0 // Default value since SectionShortDto doesn't have this
+                durationMinutes: 0,
+                numberOfQuestions: 0
             }));
             setAllSections(convertedSections);
             setTestSections(testSectionsData);
@@ -147,6 +153,44 @@ export function TestsTable({ initialData }: TestsTableProps) {
         }
     };
 
+    // Load sections for a test when accordion is expanded
+    const handleTestExpand = async (testId: string) => {
+        const id = parseInt(testId);
+        if (expandedTest === testId) {
+            setExpandedTest(undefined);
+            return;
+        }
+
+        setExpandedTest(testId);
+
+        if (!testSectionsData[id]) {
+            setLoadingSections(prev => ({ ...prev, [id]: true }));
+            try {
+                const sections = await testsApi.getTestSections(id);
+                setTestSectionsData(prev => ({ ...prev, [id]: sections }));
+            } catch (error) {
+                console.error('Failed to load test sections:', error);
+            } finally {
+                setLoadingSections(prev => ({ ...prev, [id]: false }));
+            }
+        }
+    };
+
+    // Load questions for a section
+    const handleSectionExpand = async (sectionId: number) => {
+        if (sectionQuestions[sectionId]) return;
+
+        setLoadingQuestions(prev => ({ ...prev, [sectionId]: true }));
+        try {
+            const questions = await sectionsApi.getSectionQuestions(sectionId);
+            setSectionQuestions(prev => ({ ...prev, [sectionId]: questions }));
+        } catch (error) {
+            console.error('Failed to load section questions:', error);
+        } finally {
+            setLoadingQuestions(prev => ({ ...prev, [sectionId]: false }));
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "ACTIVE":
@@ -162,87 +206,183 @@ export function TestsTable({ initialData }: TestsTableProps) {
                 <CardTitle>Tests Overview</CardTitle>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Duration</TableHead>
-                            <TableHead>Questions</TableHead>
-                            <TableHead>Frequency Limit</TableHead>
-                            <TableHead>Date Range</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            Array.from({ length: 10 }).map((_, index) => (
-                                <TableRow key={index}>
-                                    <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-                                    <TableCell><Skeleton className="h-6 w-[80px]" /></TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <Skeleton className="h-8 w-8 rounded-md" />
-                                            <Skeleton className="h-8 w-8 rounded-md" />
-                                            <Skeleton className="h-8 w-8 rounded-md" />
+                {isLoading ? (
+                    <div className="space-y-4">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <div key={index} className="border rounded-lg p-4">
+                                <Skeleton className="h-6 w-[300px] mb-2" />
+                                <Skeleton className="h-4 w-[200px]" />
+                            </div>
+                        ))}
+                    </div>
+                ) : initialData.data.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        No tests found. Create your first test to get started.
+                    </div>
+                ) : (
+                    <Accordion
+                        type="single"
+                        collapsible
+                        value={expandedTest}
+                        onValueChange={handleTestExpand}
+                        className="space-y-4"
+                    >
+                        {initialData.data.map((test) => (
+                            <AccordionItem
+                                key={test.id}
+                                value={test.id.toString()}
+                                className="border rounded-lg px-4"
+                            >
+                                <AccordionTrigger className="hover:no-underline">
+                                    <div className="flex items-center justify-between w-full pr-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-left">
+                                                <h3 className="font-semibold text-lg">{test.title}</h3>
+                                                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="h-3 w-3" />
+                                                        {test.durationMinutes} min
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <FileQuestion className="h-3 w-3" />
+                                                        {test.questions} questions
+                                                    </span>
+                                                    <span>
+                                                        {format(new Date(test.createdAt), "MMM dd, yyyy")} - {format(new Date(test.endDate), "MMM dd, yyyy")}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            initialData.data.map((test) => (
-                                <TableRow key={test.id}>
-                                    <TableCell className="font-medium">{test.title}</TableCell>
-                                    <TableCell>{test.durationMinutes} min</TableCell>
-                                    <TableCell>{test.questions}</TableCell>
-                                    <TableCell>{test.attemptLimitPerWeek} per week</TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {format(new Date(test.createdAt), "MMM dd, yyyy")} - {format(new Date(test.endDate), "MMM dd, yyyy")}
+                                        <div className="flex items-center gap-4">
+                                            {getStatusBadge(test.status)}
+                                            <div className="flex gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleView(test);
+                                                    }}
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAssignSections(test);
+                                                    }}
+                                                >
+                                                    <ListPlus className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEdit(test);
+                                                    }}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(test.id);
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </TableCell>
-                                    <TableCell>{getStatusBadge(test.status)}</TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleView(test)}
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleAssignSections(test)}
-                                            >
-                                                <ListPlus className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleEdit(test)}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDelete(test.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <div className="pl-4 border-l-2 border-muted ml-2">
+                                        <h4 className="font-medium mb-3 text-sm text-muted-foreground">Sections</h4>
+                                        {loadingSections[test.id] ? (
+                                            <div className="space-y-2">
+                                                {Array.from({ length: 3 }).map((_, i) => (
+                                                    <Skeleton key={i} className="h-12 w-full" />
+                                                ))}
+                                            </div>
+                                        ) : testSectionsData[test.id]?.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground py-4">
+                                                No sections found for this test.
+                                            </p>
+                                        ) : (
+                                            <Accordion type="single" collapsible className="space-y-2">
+                                                {testSectionsData[test.id]?.map((section) => (
+                                                    <AccordionItem
+                                                        key={section.id}
+                                                        value={`section-${section.id}`}
+                                                        className="border rounded-md"
+                                                    >
+                                                        <AccordionTrigger
+                                                            className="px-4 py-2 hover:no-underline"
+                                                            onClick={() => handleSectionExpand(section.id)}
+                                                        >
+                                                            <div className="flex items-center justify-between w-full pr-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                                                                    <span className="font-medium">{section.title}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                                                    <span>{section.durationMinutes} min</span>
+                                                                    <Badge variant="outline">{section.numberOfQuestions} questions</Badge>
+                                                                </div>
+                                                            </div>
+                                                        </AccordionTrigger>
+                                                        <AccordionContent className="px-4">
+                                                            <div className="pl-4 border-l-2 border-muted ml-2 py-2">
+                                                                <h5 className="font-medium mb-2 text-sm text-muted-foreground">Questions</h5>
+                                                                {loadingQuestions[section.id] ? (
+                                                                    <div className="space-y-2">
+                                                                        {Array.from({ length: 3 }).map((_, i) => (
+                                                                            <Skeleton key={i} className="h-8 w-full" />
+                                                                        ))}
+                                                                    </div>
+                                                                ) : sectionQuestions[section.id]?.length === 0 ? (
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        No questions assigned to this section.
+                                                                    </p>
+                                                                ) : (
+                                                                    <div className="space-y-2">
+                                                                        {sectionQuestions[section.id]?.map((question, index) => (
+                                                                            <div
+                                                                                key={question.id}
+                                                                                className="flex items-start gap-3 p-2 rounded-md bg-muted/50"
+                                                                            >
+                                                                                <span className="text-sm font-medium text-muted-foreground min-w-[24px]">
+                                                                                    {index + 1}.
+                                                                                </span>
+                                                                                <div className="flex-1">
+                                                                                    <p className="text-sm">{question.text || 'Question text not available'}</p>
+                                                                                    <div className="flex gap-2 mt-1">
+                                                                                        <Badge variant="outline" className="text-xs">
+                                                                                            {question.type}
+                                                                                        </Badge>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                ))}
+                                            </Accordion>
+                                        )}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                )}
 
                 {initialData.totalPages > 1 && (
                     <div className="flex justify-center gap-2 mt-4">

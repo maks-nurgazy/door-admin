@@ -2,8 +2,7 @@ import { Suspense } from "react";
 import { SectionsTable } from "./components/sections-table";
 import { SectionsHeader } from "./components/sections-header";
 import { SectionsFilters } from "./components/sections-filters";
-import { sectionsApi } from "@/lib/api/sections";
-import { topicsApi } from "@/lib/api/topics";
+import { sectionTemplatesApi } from "@/lib/api/section-templates";
 import Loading from "./loading";
 
 interface PageProps {
@@ -21,19 +20,18 @@ export default async function SectionsPage({ searchParams }: PageProps) {
     page: searchParameters.page ? parseInt(searchParameters.page) - 1 : 0,
   };
 
-  const initialData = await sectionsApi.getSections(filters);
-  const topics = await topicsApi.getTopics();
+  const initialData = await sectionTemplatesApi.getSectionTemplates(filters);
 
   return (
       <div className="space-y-6">
-        <SectionsHeader />
+        <SectionsHeader currentCount={initialData.totalItems} />
         <Suspense fallback={<div className="flex gap-4">
           <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md" />
         </div>}>
           <SectionsFilters />
         </Suspense>
         <Suspense fallback={<Loading />}>
-          <SectionsTable initialData={initialData} topics={topics} />
+          <SectionsTable initialData={initialData} />
         </Suspense>
       </div>
   );

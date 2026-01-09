@@ -114,6 +114,7 @@ export interface QuestionFilters {
     page?: number;
     size?: number;
     topicId?: number;
+    testId?: number;
     sectionId?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
@@ -163,6 +164,10 @@ export const questionsApi = {
 
             if (filters?.topicId) {
                 searchQueries.push(`topicId=${filters.topicId}`);
+            }
+
+            if (filters?.testId) {
+                searchQueries.push(`testId=${filters.testId}`);
             }
 
             if (filters?.sectionId) {

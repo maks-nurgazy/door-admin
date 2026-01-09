@@ -11,9 +11,10 @@ import { ArrowUp, ArrowDown, X } from "lucide-react";
 interface QuestionsFiltersProps {
     sections: { id: number; title: string; }[];
     topics: { id: number; title: string; }[];
+    tests: { id: number; title: string; }[];
 }
 
-export function QuestionsFilters({ sections, topics }: QuestionsFiltersProps) {
+export function QuestionsFilters({ sections, topics, tests }: QuestionsFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [, startTransition] = useTransition();
@@ -21,6 +22,7 @@ export function QuestionsFilters({ sections, topics }: QuestionsFiltersProps) {
     const [search, setSearch] = useState(searchParams.get("search") || "");
     const [section, setSection] = useState(searchParams.get("section") || "all");
     const [topic, setTopic] = useState(searchParams.get("topic") || "all");
+    const [test, setTest] = useState(searchParams.get("test") || "all");
     const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "createdAt");
     const [sortOrder, setSortOrder] = useState(searchParams.get("sortOrder") || "desc");
 
@@ -86,6 +88,14 @@ export function QuestionsFilters({ sections, topics }: QuestionsFiltersProps) {
         }))
     ];
 
+    const testsItems = [
+        { value: "all", label: "All Tests" },
+        ...tests.map(test => ({
+            value: test.id.toString(),
+            label: test.title
+        }))
+    ];
+
     const sortOptions = [
         { value: "createdAt", label: "Created Date" },
         { value: "id", label: "ID" },
@@ -114,18 +124,20 @@ export function QuestionsFilters({ sections, topics }: QuestionsFiltersProps) {
         setSearch("");
         setSection("all");
         setTopic("all");
+        setTest("all");
         setSortBy("createdAt");
         setSortOrder("desc");
-        updateFilters({ 
-            search: null, 
-            section: null, 
-            topic: null, 
-            sortBy: null, 
-            sortOrder: null 
+        updateFilters({
+            search: null,
+            section: null,
+            topic: null,
+            test: null,
+            sortBy: null,
+            sortOrder: null
         });
     };
 
-    const hasActiveFilters = search || section !== "all" || topic !== "all" || sortBy !== "createdAt" || sortOrder !== "desc";
+    const hasActiveFilters = search || section !== "all" || topic !== "all" || test !== "all" || sortBy !== "createdAt" || sortOrder !== "desc";
 
     return (
         <div className="flex gap-4 flex-wrap items-center">
@@ -153,6 +165,16 @@ export function QuestionsFilters({ sections, topics }: QuestionsFiltersProps) {
                     updateFilters({ topic: value });
                 }}
                 placeholder="Filter by topic"
+                className="w-[200px]"
+            />
+            <Combobox
+                items={testsItems}
+                value={test}
+                onValueChange={(value) => {
+                    setTest(value);
+                    updateFilters({ test: value });
+                }}
+                placeholder="Filter by test"
                 className="w-[200px]"
             />
             <Select value={sortBy} onValueChange={handleSortChange}>

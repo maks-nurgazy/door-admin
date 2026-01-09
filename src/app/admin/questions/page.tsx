@@ -5,8 +5,9 @@ import {QuestionsTable} from "./components/questions-table";
 import {QuestionsHeader} from "./components/questions-header";
 import {QuestionsFilters} from "./components/questions-filters";
 import {questionsApi} from "@/lib/api/questions";
-import {sectionsApi} from "@/lib/api/sections";
+import {sectionTemplatesApi} from "@/lib/api/section-templates";
 import {topicsApi} from "@/lib/api/topics";
+import {testsApi} from "@/lib/api/tests";
 import Loading from "./loading";
 import {useEffect, useState, useCallback} from "react";
 import {useSearchParams} from "next/navigation";
@@ -17,10 +18,12 @@ export default function QuestionsPage() {
         questions: any;
         sections: any[];
         topics: any[];
+        tests: any[];
     }>({
         questions: null,
         sections: [],
-        topics: []
+        topics: [],
+        tests: []
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -32,6 +35,9 @@ export default function QuestionsPage() {
                 topicId: searchParams.get("topic") && searchParams.get("topic") !== "all"
                     ? parseInt(searchParams.get("topic")!)
                     : undefined,
+                testId: searchParams.get("test") && searchParams.get("test") !== "all"
+                    ? parseInt(searchParams.get("test")!)
+                    : undefined,
                 sectionId: searchParams.get("section") && searchParams.get("section") !== "all"
                     ? parseInt(searchParams.get("section")!)
                     : undefined,
@@ -39,16 +45,18 @@ export default function QuestionsPage() {
                 sortOrder: (searchParams.get("sortOrder") as 'asc' | 'desc') || "desc",
             };
 
-            const [questions, sections, topics] = await Promise.all([
+            const [questions, sections, topics, tests] = await Promise.all([
                 questionsApi.getQuestions(filters),
-                sectionsApi.getAllSections(),
-                topicsApi.getAllTopics()
+                sectionTemplatesApi.getAllSectionTemplates(),
+                topicsApi.getAllTopics(),
+                testsApi.getTests({ size: 100 })
             ]);
 
             setData({
                 questions,
                 sections,
-                topics
+                topics,
+                tests: tests.data
             });
         } catch (error) {
             console.error('Failed to load data:', error);
@@ -80,8 +88,9 @@ export default function QuestionsPage() {
                 <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md"/>
                 <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md"/>
                 <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md"/>
+                <div className="h-10 w-[180px] bg-muted animate-pulse rounded-md"/>
             </div>}>
-                <QuestionsFilters sections={data.sections} topics={data.topics}/>
+                <QuestionsFilters sections={data.sections} topics={data.topics} tests={data.tests}/>
             </Suspense>
             <Suspense fallback={<Loading/>}>
                 {data.questions && (

@@ -14,10 +14,27 @@ export interface Test {
 }
 
 export interface TestSection {
-    id: number;
+    sectionTemplateId: number;
     title: string;
+    description: string | null;
     durationMinutes: number;
-    numberOfQuestions: number;
+    displayOrder: number;
+    questionCount: number;
+}
+
+export interface TestSectionQuestion {
+    id: number;
+    questionText: string;
+    type: string;
+    points: number;
+    timeLimitSeconds: number;
+    topics: {
+        id: number;
+        title: string;
+    }[];
+    topicCount: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface TestsResponse {
@@ -112,9 +129,9 @@ export const testsApi = {
         }
     },
 
-    getTestSections: async (id: number): Promise<TestSection[]> => {
+    getTestSections: async (testId: number): Promise<TestSection[]> => {
         try {
-            const response = await api.get(`/admin/tests/${id}/sections`);
+            const response = await api.get(`/admin/tests/${testId}/sections`);
             return response.data;
         } catch (error) {
             console.error('Failed to get test sections:', error);
@@ -122,12 +139,26 @@ export const testsApi = {
         }
     },
 
-    updateTestSections: async (testId: number, sectionIds: number[], action: 'assign' | 'remove' = 'assign'): Promise<Test> => {
+    getTestSectionQuestions: async (testId: number, sectionTemplateId: number): Promise<TestSectionQuestion[]> => {
         try {
-            const response = await api.put(`/admin/tests/${testId}/sections?action=${action}`, sectionIds);
+            const response = await api.get(`/admin/tests/${testId}/sections/${sectionTemplateId}/questions`);
             return response.data;
         } catch (error) {
-            console.error('Failed to update test sections:', error);
+            console.error('Failed to get test section questions:', error);
+            throw error;
+        }
+    },
+
+    updateTestSectionQuestions: async (
+        testId: number,
+        sectionTemplateId: number,
+        questionIds: number[],
+        action: 'assign' | 'remove' = 'assign'
+    ): Promise<void> => {
+        try {
+            await api.put(`/admin/tests/${testId}/sections/${sectionTemplateId}/questions?action=${action}`, questionIds);
+        } catch (error) {
+            console.error('Failed to update test section questions:', error);
             throw error;
         }
     }

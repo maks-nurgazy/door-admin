@@ -21,7 +21,7 @@ export interface AnalogyContent {
         id: number;
         firstWord: string;
         secondWord: string;
-        relationship: string;
+        relationship?: string;
     };
     correctAnswer: number;
     options: QuestionOption[];
@@ -133,13 +133,15 @@ export interface QuestionFormDto {
 // API request DTO (sent to backend)
 export interface CreateQuestionDto {
     questionText: string;
-    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
+    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION' | 'READING_COMPREHENSION';
     topicIds: number[];
     points: number;
     timeLimitSeconds: number;
     explanation: string;
     content: string; // JSON string - matches backend expectation
     correctAnswer: number; // Separate field as expected by backend
+    testId?: number; // Optional: assign to test on creation
+    sectionTemplateId?: number; // Optional: assign to section on creation
 }
 
 export const questionsApi = {

@@ -23,15 +23,18 @@ import {
 } from "@/components/ui/select";
 import { Question, AnalogyContent, ComparisonContent, MathCalculationContent, SentenceCompletionContent } from "@/lib/api/questions";
 import { TopicShortDto } from "@/lib/api/topics";
+import { Test } from "@/lib/api/tests";
+import { SectionTemplate } from "@/lib/api/section-templates";
 import { TopicSelector } from "./topic-selector";
 import { AnalogyForm } from "./analogy-form";
 import { ComparisonForm } from "./comparison-form";
 import { MathForm } from "./math-form";
 import { SentenceForm } from "./sentence-form";
 import { ReadingComprehensionForm, ReadingComprehensionContent } from "./reading-comprehension-form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getQuestionTypes } from "@/lib/question-types";
+import { testsApi, TestSection } from "@/lib/api/tests";
 
 const questionSchema = z.object({
     questionText: z.string().min(3, "Question text must be at least 3 characters"),
@@ -41,6 +44,8 @@ const questionSchema = z.object({
     timeLimitSeconds: z.coerce.number().min(1, "Time limit must be at least 1 second"),
     explanation: z.string(),
     content: z.any(), // Will be validated by specific form components
+    testId: z.number().optional(),
+    sectionTemplateId: z.number().optional(),
 });
 
 export type QuestionFormValues = z.infer<typeof questionSchema>;
@@ -49,11 +54,12 @@ interface QuestionFormProps {
     mode?: 'create' | 'edit';
     question?: Question;
     topics: TopicShortDto[];
+    tests?: Test[];
     onSubmit: (data: QuestionFormValues) => Promise<void>;
     onCancel: () => void;
 }
 
-export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCancel }: QuestionFormProps) {
+export function QuestionForm({ mode = 'create', question, topics, tests = [], onSubmit, onCancel }: QuestionFormProps) {
     // Extract topic IDs from either topicIds array or topics array
     const getTopicIds = (q?: Question): number[] => {
         if (!q) return [];
@@ -65,6 +71,24 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
     const [selectedTopics, setSelectedTopics] = useState<number[]>(getTopicIds(question));
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [content, setContent] = useState<any>(question?.content);
+    const [selectedTestId, setSelectedTestId] = useState<number | undefined>(undefined);
+    const [sections, setSections] = useState<TestSection[]>([]);
+    const [selectedSectionId, setSelectedSectionId] = useState<number | undefined>(undefined);
+    const [loadingSections, setLoadingSections] = useState(false);
+
+    // Load sections when test is selected
+    useEffect(() => {
+        if (selectedTestId) {
+            setLoadingSections(true);
+            testsApi.getTestSections(selectedTestId)
+                .then(setSections)
+                .catch(console.error)
+                .finally(() => setLoadingSections(false));
+        } else {
+            setSections([]);
+            setSelectedSectionId(undefined);
+        }
+    }, [selectedTestId]);
 
     const form = useForm<QuestionFormValues>({
         resolver: zodResolver(questionSchema),
@@ -76,6 +100,8 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
             timeLimitSeconds: question.timeLimitSeconds,
             explanation: question.explanation || "",
             content: question.content,
+            testId: undefined,
+            sectionTemplateId: undefined,
         } : {
             questionText: "",
             type: "ANALOGY",
@@ -84,6 +110,8 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
             timeLimitSeconds: 30,
             explanation: "",
             content: null,
+            testId: undefined,
+            sectionTemplateId: undefined,
         },
     });
 
@@ -121,7 +149,9 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
             const submitData = {
                 ...data,
                 content: JSON.stringify(content), // Convert entire content to JSON string (includes correctAnswer)
-                correctAnswer: content.correctAnswer // Also send as separate top-level field
+                correctAnswer: content.correctAnswer, // Also send as separate top-level field
+                testId: selectedTestId,
+                sectionTemplateId: selectedSectionId,
             };
 
             console.log('Prepared submit data:', submitData);
@@ -259,6 +289,59 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                         form.setValue('topicIds', topicIds, { shouldValidate: true });
                     }}
                 />
+
+                {/* Test and Section Assignment (Optional) */}
+                {mode === 'create' && tests.length > 0 && (
+                    <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                        <h4 className="font-medium text-sm">Assign to Test & Section (Optional)</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <FormLabel>Test</FormLabel>
+                                <Select
+                                    value={selectedTestId?.toString() || ""}
+                                    onValueChange={(value) => {
+                                        setSelectedTestId(value ? parseInt(value) : undefined);
+                                        setSelectedSectionId(undefined);
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a test (optional)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {tests.map((test) => (
+                                            <SelectItem key={test.id} value={test.id.toString()}>
+                                                {test.title}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <FormLabel>Section</FormLabel>
+                                <Select
+                                    value={selectedSectionId?.toString() || ""}
+                                    onValueChange={(value) => setSelectedSectionId(value ? parseInt(value) : undefined)}
+                                    disabled={!selectedTestId || loadingSections}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={loadingSections ? "Loading..." : "Select a section"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {sections.map((section) => (
+                                            <SelectItem key={section.sectionTemplateId} value={section.sectionTemplateId.toString()}>
+                                                {section.title} ({section.questionCount} questions)
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            If you select both a test and section, the question will be automatically assigned to that section.
+                        </p>
+                    </div>
+                )}
 
                 {/* Conditional rendering based on question type */}
                 {form.watch("type") === "ANALOGY" && (

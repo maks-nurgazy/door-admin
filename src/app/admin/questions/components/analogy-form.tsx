@@ -28,14 +28,12 @@ const analogySchema = z.object({
         id: z.number(),
         firstWord: z.string().min(1, "First word is required"),
         secondWord: z.string().min(1, "Second word is required"),
-        relationship: z.string(),
     }),
     correctAnswer: z.number().min(1, "Correct answer is required"),
     options: z.array(z.object({
         id: z.number(),
         firstWord: z.string().min(1, "First word is required"),
         secondWord: z.string().min(1, "Second word is required"),
-        relationship: z.string(),
     })).min(2, "At least 2 options are required"),
     relationshipType: z.string(),
 });
@@ -60,14 +58,13 @@ export function AnalogyForm({ content, onChange }: AnalogyFormProps) {
                 id: 0,
                 firstWord: "",
                 secondWord: "",
-                relationship: "",
             },
             correctAnswer: 1,
             options: [
-                { id: 1, firstWord: "", secondWord: "", relationship: "" },
-                { id: 2, firstWord: "", secondWord: "", relationship: "" },
-                { id: 3, firstWord: "", secondWord: "", relationship: "" },
-                { id: 4, firstWord: "", secondWord: "", relationship: "" },
+                { id: 1, firstWord: "", secondWord: "" },
+                { id: 2, firstWord: "", secondWord: "" },
+                { id: 3, firstWord: "", secondWord: "" },
+                { id: 4, firstWord: "", secondWord: "" },
             ],
             relationshipType: "",
         },
@@ -123,19 +120,6 @@ export function AnalogyForm({ content, onChange }: AnalogyFormProps) {
                             )}
                         />
                     </div>
-                    <FormField
-                        control={form.control}
-                        name="examplePair.relationship"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Relationship</FormLabel>
-                                <FormControl>
-                                    <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
                 </div>
 
                 <div className="space-y-4">
@@ -171,19 +155,6 @@ export function AnalogyForm({ content, onChange }: AnalogyFormProps) {
                                     )}
                                 />
                             </div>
-                            <FormField
-                                control={form.control}
-                                name={`options.${index}.relationship`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Relationship</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
                         </div>
                     ))}
                 </div>

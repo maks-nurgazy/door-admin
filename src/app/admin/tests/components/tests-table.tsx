@@ -18,14 +18,10 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Pencil, Trash2, Eye, ListPlus, ChevronRight, BookOpen, Clock, FileQuestion } from "lucide-react";
+import { Pencil, Trash2, Eye, BookOpen, Clock, FileQuestion, ChevronRight } from "lucide-react";
 import { Test, TestSection, TestsResponse, testsApi } from "@/lib/api/tests";
-import { sectionsApi, SectionQuestion } from "@/lib/api/sections";
-import { Question } from "@/lib/api/questions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { TestsHeader } from "./tests-header";
 import { format } from "date-fns";
 
@@ -41,18 +37,11 @@ export function TestsTable({ initialData }: TestsTableProps) {
     const [selectedTest, setSelectedTest] = useState<Test | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isSectionsDialogOpen, setIsSectionsDialogOpen] = useState(false);
-    const [allSections, setAllSections] = useState<TestSection[]>([]);
-    const [testSections, setTestSections] = useState<TestSection[]>([]);
-    const [selectedSections, setSelectedSections] = useState<number[]>([]);
-    const [isLoadingSections, setIsLoadingSections] = useState(false);
 
-    // New state for accordion view
+    // State for accordion view
     const [expandedTest, setExpandedTest] = useState<string | undefined>(undefined);
     const [testSectionsData, setTestSectionsData] = useState<Record<number, TestSection[]>>({});
-    const [sectionQuestions, setSectionQuestions] = useState<Record<number, SectionQuestion[]>>({});
     const [loadingSections, setLoadingSections] = useState<Record<number, boolean>>({});
-    const [loadingQuestions, setLoadingQuestions] = useState<Record<number, boolean>>({});
 
     const currentPage = searchParams.get("page")
         ? parseInt(searchParams.get("page")!) - 1
@@ -90,69 +79,6 @@ export function TestsTable({ initialData }: TestsTableProps) {
         setIsEditDialogOpen(true);
     };
 
-    const handleAssignSections = async (test: Test) => {
-        setSelectedTest(test);
-        setIsLoadingSections(true);
-        try {
-            const [allSectionsData, testSectionsData] = await Promise.all([
-                sectionsApi.getAllSections(),
-                testsApi.getTestSections(test.id)
-            ]);
-
-            // Convert SectionShortDto to TestSection format for consistency
-            const convertedSections = allSectionsData.map(section => ({
-                id: section.id,
-                title: section.title,
-                durationMinutes: 0,
-                numberOfQuestions: 0
-            }));
-            setAllSections(convertedSections);
-            setTestSections(testSectionsData);
-            setSelectedSections(testSectionsData.map(s => s.id));
-            setIsSectionsDialogOpen(true);
-        } catch (error) {
-            console.error('Failed to load sections:', error);
-        } finally {
-            setIsLoadingSections(false);
-        }
-    };
-
-    const toggleSectionSelection = (sectionId: number) => {
-        setSelectedSections(prev =>
-            prev.includes(sectionId)
-                ? prev.filter(id => id !== sectionId)
-                : [...prev, sectionId]
-        );
-    };
-
-    const handleSaveSections = async () => {
-        if (!selectedTest) return;
-
-        try {
-            const currentSections = testSections.map(s => s.id);
-
-            // Determine which sections to assign and which to remove
-            const sectionsToAssign = selectedSections.filter(id => !currentSections.includes(id));
-            const sectionsToRemove = currentSections.filter(id => !selectedSections.includes(id));
-
-            // Update sections in sequence
-            if (sectionsToAssign.length > 0) {
-                await testsApi.updateTestSections(selectedTest.id, sectionsToAssign, 'assign');
-            }
-
-            if (sectionsToRemove.length > 0) {
-                await testsApi.updateTestSections(selectedTest.id, sectionsToRemove, 'remove');
-            }
-
-            setIsSectionsDialogOpen(false);
-            setSelectedTest(null);
-            setSelectedSections([]);
-            router.refresh();
-        } catch (error) {
-            console.error('Failed to update sections:', error);
-        }
-    };
-
     // Load sections for a test when accordion is expanded
     const handleTestExpand = async (testId: string) => {
         const id = parseInt(testId);
@@ -176,19 +102,9 @@ export function TestsTable({ initialData }: TestsTableProps) {
         }
     };
 
-    // Load questions for a section
-    const handleSectionExpand = async (sectionId: number) => {
-        if (sectionQuestions[sectionId]) return;
-
-        setLoadingQuestions(prev => ({ ...prev, [sectionId]: true }));
-        try {
-            const questions = await sectionsApi.getSectionQuestions(sectionId);
-            setSectionQuestions(prev => ({ ...prev, [sectionId]: questions }));
-        } catch (error) {
-            console.error('Failed to load section questions:', error);
-        } finally {
-            setLoadingQuestions(prev => ({ ...prev, [sectionId]: false }));
-        }
+    // Navigate to section questions page
+    const handleSectionClick = (testId: number, sectionTemplateId: number) => {
+        router.push(`/admin/tests/${testId}/sections/${sectionTemplateId}`);
     };
 
     const getStatusBadge = (status: string) => {
@@ -248,7 +164,7 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                                         {test.questions} questions
                                                     </span>
                                                     <span>
-                                                        {format(new Date(test.createdAt), "MMM dd, yyyy")} - {format(new Date(test.endDate), "MMM dd, yyyy")}
+                                                        {format(new Date(test.startDate), "MMM dd, yyyy")} - {format(new Date(test.endDate), "MMM dd, yyyy")}
                                                     </span>
                                                 </div>
                                             </div>
@@ -265,16 +181,6 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                                     }}
                                                 >
                                                     <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleAssignSections(test);
-                                                    }}
-                                                >
-                                                    <ListPlus className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
@@ -311,71 +217,39 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                             </div>
                                         ) : testSectionsData[test.id]?.length === 0 ? (
                                             <p className="text-sm text-muted-foreground py-4">
-                                                No sections found for this test.
+                                                No sections available. Create section templates first.
                                             </p>
                                         ) : (
-                                            <Accordion type="single" collapsible className="space-y-2">
+                                            <div className="space-y-2">
                                                 {testSectionsData[test.id]?.map((section) => (
-                                                    <AccordionItem
-                                                        key={section.id}
-                                                        value={`section-${section.id}`}
-                                                        className="border rounded-md"
+                                                    <div
+                                                        key={section.sectionTemplateId}
+                                                        className="flex items-center justify-between p-3 border rounded-md hover:bg-accent cursor-pointer transition-colors"
+                                                        onClick={() => handleSectionClick(test.id, section.sectionTemplateId)}
                                                     >
-                                                        <AccordionTrigger
-                                                            className="px-4 py-2 hover:no-underline"
-                                                            onClick={() => handleSectionExpand(section.id)}
-                                                        >
-                                                            <div className="flex items-center justify-between w-full pr-4">
-                                                                <div className="flex items-center gap-3">
-                                                                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                                                                    <span className="font-medium">{section.title}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                                                    <span>{section.durationMinutes} min</span>
-                                                                    <Badge variant="outline">{section.numberOfQuestions} questions</Badge>
-                                                                </div>
-                                                            </div>
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="px-4">
-                                                            <div className="pl-4 border-l-2 border-muted ml-2 py-2">
-                                                                <h5 className="font-medium mb-2 text-sm text-muted-foreground">Questions</h5>
-                                                                {loadingQuestions[section.id] ? (
-                                                                    <div className="space-y-2">
-                                                                        {Array.from({ length: 3 }).map((_, i) => (
-                                                                            <Skeleton key={i} className="h-8 w-full" />
-                                                                        ))}
-                                                                    </div>
-                                                                ) : sectionQuestions[section.id]?.length === 0 ? (
-                                                                    <p className="text-sm text-muted-foreground">
-                                                                        No questions assigned to this section.
+                                                        <div className="flex items-center gap-3">
+                                                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                                                            <div>
+                                                                <span className="font-medium">{section.title}</span>
+                                                                {section.description && (
+                                                                    <p className="text-xs text-muted-foreground truncate max-w-[300px]">
+                                                                        {section.description}
                                                                     </p>
-                                                                ) : (
-                                                                    <div className="space-y-2">
-                                                                        {sectionQuestions[section.id]?.map((question, index) => (
-                                                                            <div
-                                                                                key={question.id}
-                                                                                className="flex items-start gap-3 p-2 rounded-md bg-muted/50"
-                                                                            >
-                                                                                <span className="text-sm font-medium text-muted-foreground min-w-[24px]">
-                                                                                    {index + 1}.
-                                                                                </span>
-                                                                                <div className="flex-1">
-                                                                                    <p className="text-sm">{question.text || 'Question text not available'}</p>
-                                                                                    <div className="flex gap-2 mt-1">
-                                                                                        <Badge variant="outline" className="text-xs">
-                                                                                            {question.type}
-                                                                                        </Badge>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
                                                                 )}
                                                             </div>
-                                                        </AccordionContent>
-                                                    </AccordionItem>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <span className="text-sm text-muted-foreground">
+                                                                {section.durationMinutes} min
+                                                            </span>
+                                                            <Badge variant="outline">
+                                                                {section.questionCount} questions
+                                                            </Badge>
+                                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                                        </div>
+                                                    </div>
                                                 ))}
-                                            </Accordion>
+                                            </div>
                                         )}
                                     </div>
                                 </AccordionContent>
@@ -394,8 +268,8 @@ export function TestsTable({ initialData }: TestsTableProps) {
                             Previous
                         </Button>
                         <span className="py-2 px-4">
-              Page {currentPage + 1} of {initialData.totalPages}
-            </span>
+                            Page {currentPage + 1} of {initialData.totalPages}
+                        </span>
                         <Button
                             variant="outline"
                             onClick={() => handlePageChange(currentPage + 1)}
@@ -440,7 +314,7 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                 <div>
                                     <Label className="text-sm text-muted-foreground">Date Range</Label>
                                     <p className="text-lg font-medium">
-                                        {format(new Date(selectedTest.createdAt), "MMM dd, yyyy")} - {format(new Date(selectedTest.endDate), "MMM dd, yyyy")}
+                                        {format(new Date(selectedTest.startDate), "MMM dd, yyyy")} - {format(new Date(selectedTest.endDate), "MMM dd, yyyy")}
                                     </p>
                                 </div>
                                 <div>
@@ -468,74 +342,6 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                 }}
                             />
                         )}
-                    </DialogContent>
-                </Dialog>
-
-                {/* Assign Sections Dialog */}
-                <Dialog open={isSectionsDialogOpen} onOpenChange={setIsSectionsDialogOpen}>
-                    <DialogContent className="max-w-3xl">
-                        <DialogHeader>
-                            <DialogTitle>Manage Test Sections</DialogTitle>
-                            <DialogDescription>Assign or remove sections for this test</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <ScrollArea className="h-[400px] rounded-md border p-4">
-                                {isLoadingSections ? (
-                                    Array.from({ length: 5 }).map((_, index) => (
-                                        <div key={index} className="mb-4">
-                                            <Skeleton className="h-6 w-full mb-2" />
-                                            <Skeleton className="h-4 w-20" />
-                                        </div>
-                                    ))
-                                ) : allSections.length === 0 ? (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        No sections available
-                                    </div>
-                                ) : (
-                                    allSections.map((section) => (
-                                        <div
-                                            key={section.id}
-                                            className={cn(
-                                                "flex items-center justify-between p-4 rounded-lg hover:bg-accent cursor-pointer mb-2",
-                                                selectedSections.includes(section.id) && "bg-accent"
-                                            )}
-                                            onClick={() => toggleSectionSelection(section.id)}
-                                        >
-                                            <div className="flex-1">
-                                                <p className="font-medium">{section.title}</p>
-                                                <div className="flex gap-2 mt-1">
-                                                    <Badge variant="outline">{section.durationMinutes} min</Badge>
-                                                    <Badge variant="outline">{section.numberOfQuestions} questions</Badge>
-                                                </div>
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedSections.includes(section.id)}
-                                                onChange={() => toggleSectionSelection(section.id)}
-                                                className="ml-4"
-                                            />
-                                        </div>
-                                    ))
-                                )}
-                            </ScrollArea>
-                            <div className="flex justify-between items-center">
-                                <p className="text-sm text-muted-foreground">
-                                    {selectedSections.length} sections selected
-                                </p>
-                                <div className="flex gap-3">
-                                    <Button variant="outline" onClick={() => {
-                                        setIsSectionsDialogOpen(false);
-                                        setSelectedTest(null);
-                                        setSelectedSections([]);
-                                    }}>
-                                        Cancel
-                                    </Button>
-                                    <Button onClick={handleSaveSections}>
-                                        Save Sections
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
                     </DialogContent>
                 </Dialog>
             </CardContent>

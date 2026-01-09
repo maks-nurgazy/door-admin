@@ -1,12 +1,13 @@
 "use client";
 
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {Button} from "@/components/ui/button";
 import {Plus, Upload} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger,} from "@/components/ui/dialog";
 import {useRouter} from "next/navigation";
 import {Question, questionsApi} from "@/lib/api/questions";
 import {TopicShortDto} from "@/lib/api/topics";
+import {Test, testsApi} from "@/lib/api/tests";
 import {QuestionForm, QuestionFormValues} from "./question-form";
 
 interface QuestionsHeaderProps {
@@ -19,7 +20,16 @@ interface QuestionsHeaderProps {
 
 export function QuestionsHeader({mode = 'create', question, onClose, onSuccess, topics = []}: QuestionsHeaderProps) {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [tests, setTests] = useState<Test[]>([]);
     useRouter();
+
+    // Load tests for the test/section selector
+    useEffect(() => {
+        testsApi.getTests({ size: 100 })
+            .then(response => setTests(response.data))
+            .catch(console.error);
+    }, []);
+
     const handleSubmit = async (data: QuestionFormValues) => {
         try {
             if (mode === 'edit' && question) {
@@ -43,6 +53,7 @@ export function QuestionsHeader({mode = 'create', question, onClose, onSuccess, 
                 mode="edit"
                 question={question}
                 topics={topics}
+                tests={tests}
                 onSubmit={handleSubmit}
                 onCancel={onClose!}
             />
@@ -72,6 +83,7 @@ export function QuestionsHeader({mode = 'create', question, onClose, onSuccess, 
                         <div className="flex-1 overflow-y-auto px-1">
                             <QuestionForm
                                 topics={topics}
+                                tests={tests}
                                 onSubmit={handleSubmit}
                                 onCancel={() => setIsAddDialogOpen(false)}
                             />

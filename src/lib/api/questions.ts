@@ -143,6 +143,7 @@ export interface CreateQuestionDto {
     correctAnswer: number; // Separate field as expected by backend
     testId?: number; // Optional: assign to test on creation
     sectionTemplateId?: number; // Optional: assign to section on creation
+    readingPassageId?: number; // Optional: for READING_COMPREHENSION questions
 }
 
 export const questionsApi = {

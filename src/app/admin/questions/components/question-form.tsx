@@ -30,11 +30,12 @@ import { AnalogyForm } from "./analogy-form";
 import { ComparisonForm } from "./comparison-form";
 import { MathForm } from "./math-form";
 import { SentenceForm } from "./sentence-form";
-import { ReadingComprehensionForm, ReadingComprehensionContent } from "./reading-comprehension-form";
+import { ReadingComprehensionForm, ReadingComprehensionFormData } from "./reading-comprehension-form";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getQuestionTypes } from "@/lib/question-types";
 import { testsApi, TestSection } from "@/lib/api/tests";
+import { readingPassagesApi, ReadingPassageListItem } from "@/lib/api/reading-passages";
 
 const questionSchema = z.object({
     questionText: z.string().min(3, "Question text must be at least 3 characters"),
@@ -46,6 +47,7 @@ const questionSchema = z.object({
     content: z.any(), // Will be validated by specific form components
     testId: z.number().optional(),
     sectionTemplateId: z.number().optional(),
+    readingPassageId: z.number().optional(), // For READING_COMPREHENSION questions
 });
 
 export type QuestionFormValues = z.infer<typeof questionSchema>;
@@ -75,6 +77,8 @@ export function QuestionForm({ mode = 'create', question, topics, tests = [], on
     const [sections, setSections] = useState<TestSection[]>([]);
     const [selectedSectionId, setSelectedSectionId] = useState<number | undefined>(undefined);
     const [loadingSections, setLoadingSections] = useState(false);
+    const [passages, setPassages] = useState<ReadingPassageListItem[]>([]);
+    const [loadingPassages, setLoadingPassages] = useState(false);
 
     // Load sections when test is selected
     useEffect(() => {
@@ -89,6 +93,22 @@ export function QuestionForm({ mode = 'create', question, topics, tests = [], on
             setSelectedSectionId(undefined);
         }
     }, [selectedTestId]);
+
+    // Load all reading passages on mount
+    useEffect(() => {
+        setLoadingPassages(true);
+        readingPassagesApi.getAllPassagesForDropdown()
+            .then(setPassages)
+            .catch((error) => {
+                console.error('Failed to load reading passages:', error);
+                toast({
+                    title: "Error",
+                    description: "Failed to load reading passages",
+                    variant: "destructive",
+                });
+            })
+            .finally(() => setLoadingPassages(false));
+    }, []);
 
     const form = useForm<QuestionFormValues>({
         resolver: zodResolver(questionSchema),
@@ -184,8 +204,17 @@ export function QuestionForm({ mode = 'create', question, topics, tests = [], on
     };
 
     const handleContentChange = (newContent: any) => {
-        setContent(newContent);
-        form.setValue('content', newContent, { shouldValidate: true });
+        // For READING_COMPREHENSION, extract readingPassageId separately
+        if (form.watch("type") === "READING_COMPREHENSION" && newContent.readingPassageId) {
+            form.setValue('readingPassageId', newContent.readingPassageId, { shouldValidate: true });
+            // Remove readingPassageId from content as it's stored separately
+            const { readingPassageId, ...contentWithoutPassageId } = newContent;
+            setContent(contentWithoutPassageId);
+            form.setValue('content', contentWithoutPassageId, { shouldValidate: true });
+        } else {
+            setContent(newContent);
+            form.setValue('content', newContent, { shouldValidate: true });
+        }
     };
 
     return (
@@ -374,7 +403,8 @@ export function QuestionForm({ mode = 'create', question, topics, tests = [], on
 
                 {form.watch("type") === "READING_COMPREHENSION" && (
                     <ReadingComprehensionForm
-                        content={content as ReadingComprehensionContent}
+                        content={content as ReadingComprehensionFormData}
+                        passages={passages}
                         onChange={handleContentChange}
                     />
                 )}

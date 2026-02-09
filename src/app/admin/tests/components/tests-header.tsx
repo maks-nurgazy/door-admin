@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Test, testsApi } from "@/lib/api/tests";
+import { TestPackageDto, testsApi, TestStatus, TestType } from "@/lib/api/tests";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -36,17 +36,17 @@ import {
 
 const testSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(100, "Title must be less than 100 characters"),
-    description: z.string().min(3, "Description must be at least 3 characters"),
-    startDate: z.string().min(1, "Start date is required"),
-    endDate: z.string().min(1, "End date is required"),
-    attemptLimitPerWeek: z.coerce.number().min(1, "Attempt limit must be at least 1"),
+    description: z.string().optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
     status: z.enum(["ACTIVE", "IN_ACTIVE"]),
+    testType: z.enum(["FREE", "PAID"]),
 });
 
 type TestFormValues = z.infer<typeof testSchema>;
 
 interface TestsHeaderProps {
-    test?: Test;
+    test?: TestPackageDto;
     onClose?: () => void;
 }
 
@@ -58,27 +58,36 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
         resolver: zodResolver(testSchema),
         defaultValues: test ? {
             title: test.title,
-            description: test.description,
-            startDate: test.startDate,
-            endDate: test.endDate,
-            attemptLimitPerWeek: test.attemptLimitPerWeek,
+            description: test.description || "",
+            startDate: test.startDate || "",
+            endDate: test.endDate || "",
             status: test.status,
+            testType: test.testType,
         } : {
             title: "",
             description: "",
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            attemptLimitPerWeek: 1,
+            startDate: "",
+            endDate: "",
             status: "IN_ACTIVE",
+            testType: "FREE",
         },
     });
 
     const onSubmit = async (data: TestFormValues) => {
         try {
+            const payload = {
+                title: data.title,
+                description: data.description || undefined,
+                status: data.status as TestStatus,
+                testType: data.testType as TestType,
+                startDate: data.startDate || undefined,
+                endDate: data.endDate || undefined,
+            };
+
             if (test) {
-                await testsApi.updateTest(test.id, data);
+                await testsApi.updateTest(test.id, payload);
             } else {
-                await testsApi.createTest(data);
+                await testsApi.createTest(payload);
             }
             setIsDialogOpen(false);
             form.reset();
@@ -91,118 +100,142 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
         }
     };
 
+    const TestForm = () => (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Test Title</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g., ORT 2024 Variant 1" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Description (Optional)</FormLabel>
+                            <FormControl>
+                                <Textarea
+                                    placeholder="Enter test description..."
+                                    className="resize-none"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="testType"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Test Type</FormLabel>
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="FREE">Free</SelectItem>
+                                        <SelectItem value="PAID">Paid</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Status</FormLabel>
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="ACTIVE">Active</SelectItem>
+                                        <SelectItem value="IN_ACTIVE">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="startDate"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Start Date (Optional)</FormLabel>
+                                <FormControl>
+                                    <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>End Date (Optional)</FormLabel>
+                                <FormControl>
+                                    <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                <div className="flex justify-end gap-3">
+                    <Button
+                        variant="outline"
+                        type="button"
+                        onClick={() => {
+                            if (test) {
+                                onClose?.();
+                            } else {
+                                setIsDialogOpen(false);
+                                form.reset();
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button type="submit">
+                        {test ? "Save Changes" : "Add Test"}
+                    </Button>
+                </div>
+            </form>
+        </Form>
+    );
+
     if (test) {
-        return (
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Test Title</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="e.g., Spring 2024 ORT Test" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Description</FormLabel>
-                                <FormControl>
-                                    <Textarea
-                                        placeholder="Enter test description..."
-                                        className="resize-none"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="startDate"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Start Date</FormLabel>
-                                    <FormControl>
-                                        <Input type="date" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="endDate"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>End Date</FormLabel>
-                                    <FormControl>
-                                        <Input type="date" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="attemptLimitPerWeek"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Weekly Attempt Limit</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" min={1} {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Status</FormLabel>
-                                    <Select
-                                        value={field.value}
-                                        onValueChange={field.onChange}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="ACTIVE">Active</SelectItem>
-                                            <SelectItem value="IN_ACTIVE">Inactive</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3">
-                        <Button variant="outline" type="button" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button type="submit">
-                            Save Changes
-                        </Button>
-                    </div>
-                </form>
-            </Form>
-        );
+        return <TestForm />;
     }
 
     return (
@@ -218,120 +251,9 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Add New Test</DialogTitle>
-                        <DialogDescription>Create a new test with details and settings</DialogDescription>
+                        <DialogDescription>Create a new test package with details and settings</DialogDescription>
                     </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="title"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Test Title</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g., Spring 2024 ORT Test" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Description</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                placeholder="Enter test description..."
-                                                className="resize-none"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="startDate"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Start Date</FormLabel>
-                                            <FormControl>
-                                                <Input type="date" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="endDate"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>End Date</FormLabel>
-                                            <FormControl>
-                                                <Input type="date" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="attemptLimitPerWeek"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Weekly Attempt Limit</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" min={1} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="status"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Status</FormLabel>
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="ACTIVE">Active</SelectItem>
-                                                    <SelectItem value="IN_ACTIVE">Inactive</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="flex justify-end gap-3">
-                                <Button variant="outline" type="button" onClick={() => {
-                                    setIsDialogOpen(false);
-                                    form.reset();
-                                }}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit">
-                                    Add Test
-                                </Button>
-                            </div>
-                        </form>
-                    </Form>
+                    <TestForm />
                 </DialogContent>
             </Dialog>
         </div>

@@ -1,5 +1,6 @@
 import axios, {AxiosInstance} from 'axios';
 import {getServerSession} from "next-auth";
+import {getSession} from "next-auth/react";
 import {authOptions} from "@/lib/auth";
 
 export const api: AxiosInstance = axios.create({
@@ -12,15 +13,23 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use(
     async (config) => {
-        // 1. Only run in the server environment
-        //    (getServerSession won't work on the client)
+        let accessToken: string | undefined;
+
         if (typeof window === "undefined") {
+            // Server-side: use getServerSession
             const session = await getServerSession(authOptions);
-            if (session?.accessToken) {
-                config.headers = config.headers || {};
-                config.headers.Authorization = `Bearer ${session.accessToken}`;
-            }
+            accessToken = session?.accessToken;
+        } else {
+            // Client-side: use getSession
+            const session = await getSession();
+            accessToken = session?.accessToken;
         }
+
+        if (accessToken) {
+            config.headers = config.headers || {};
+            config.headers.Authorization = `Bearer ${accessToken}`;
+        }
+
         return config;
     },
     (error) => {

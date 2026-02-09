@@ -26,10 +26,10 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    const apiUrl = `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/admin/auth/login`;
+                    const apiUrl = `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/api/admin/auth/login`;
                     console.log("Login API URL:", apiUrl);
 
-                    // POST /admin/auth/login - Admin authentication endpoint
+                    // POST /api/admin/auth/login - Admin authentication endpoint
                     const res = await fetch(apiUrl, {
                         method: "POST",
                         headers: {
@@ -165,9 +165,9 @@ export const authOptions: NextAuthOptions = {
  */
 async function refreshAccessToken(token: any) {
     try {
-        // POST /admin/auth/refresh-token - Admin token refresh endpoint
+        // POST /api/admin/auth/refresh-token - Admin token refresh endpoint
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/admin/auth/refresh-token`,
+            `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/api/admin/auth/refresh-token`,
             {
                 headers: {"Content-Type": "application/json"},
                 method: "POST",

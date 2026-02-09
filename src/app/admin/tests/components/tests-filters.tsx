@@ -3,6 +3,13 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export function TestsFilters() {
     const router = useRouter();
@@ -54,14 +61,48 @@ export function TestsFilters() {
         return () => clearTimeout(timeoutId);
     }, [search, updateFilters]);
 
+    const handleStatusChange = (value: string) => {
+        updateFilters({ status: value === "all" ? null : value });
+    };
+
+    const handleTestTypeChange = (value: string) => {
+        updateFilters({ testType: value === "all" ? null : value });
+    };
+
     return (
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap">
             <Input
                 placeholder="Search tests..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"
             />
+            <Select
+                defaultValue={searchParams.get("status") || "all"}
+                onValueChange={handleStatusChange}
+            >
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="IN_ACTIVE">Inactive</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select
+                defaultValue={searchParams.get("testType") || "all"}
+                onValueChange={handleTestTypeChange}
+            >
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Test Type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="FREE">Free</SelectItem>
+                    <SelectItem value="PAID">Paid</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
     );
 }

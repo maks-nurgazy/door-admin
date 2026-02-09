@@ -18,8 +18,8 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, Eye, BookOpen, Clock, FileQuestion, ChevronRight } from "lucide-react";
-import { Test, TestSection, TestsResponse, testsApi } from "@/lib/api/tests";
+import { Pencil, Trash2, Eye, BookOpen, ChevronRight, Calendar, DollarSign } from "lucide-react";
+import { TestPackageListDto, TestPackageDto, TestSection, TestsResponse, testsApi } from "@/lib/api/tests";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { TestsHeader } from "./tests-header";
@@ -34,9 +34,10 @@ export function TestsTable({ initialData }: TestsTableProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedTest, setSelectedTest] = useState<Test | null>(null);
+    const [selectedTest, setSelectedTest] = useState<TestPackageDto | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [loadingTestDetails, setLoadingTestDetails] = useState(false);
 
     // State for accordion view
     const [expandedTest, setExpandedTest] = useState<string | undefined>(undefined);
@@ -69,14 +70,30 @@ export function TestsTable({ initialData }: TestsTableProps) {
         }
     };
 
-    const handleView = (test: Test) => {
-        setSelectedTest(test);
+    const handleView = async (test: TestPackageListDto) => {
+        setLoadingTestDetails(true);
         setIsViewDialogOpen(true);
+        try {
+            const testDetails = await testsApi.getTest(test.id);
+            setSelectedTest(testDetails);
+        } catch (error) {
+            console.error('Failed to fetch test details:', error);
+        } finally {
+            setLoadingTestDetails(false);
+        }
     };
 
-    const handleEdit = (test: Test) => {
-        setSelectedTest(test);
+    const handleEdit = async (test: TestPackageListDto) => {
+        setLoadingTestDetails(true);
         setIsEditDialogOpen(true);
+        try {
+            const testDetails = await testsApi.getTest(test.id);
+            setSelectedTest(testDetails);
+        } catch (error) {
+            console.error('Failed to fetch test details:', error);
+        } finally {
+            setLoadingTestDetails(false);
+        }
     };
 
     // Load sections for a test when accordion is expanded
@@ -107,13 +124,30 @@ export function TestsTable({ initialData }: TestsTableProps) {
         router.push(`/admin/tests/${testId}/sections/${sectionTemplateId}`);
     };
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case "ACTIVE":
-                return <Badge className="bg-green-500">Active</Badge>;
-            default:
-                return <Badge variant="secondary">Inactive</Badge>;
+    const getStatusBadge = (status: string, isActive?: boolean) => {
+        if (status === "ACTIVE" && isActive) {
+            return <Badge className="bg-green-500">Active</Badge>;
+        } else if (status === "ACTIVE") {
+            return <Badge className="bg-yellow-500">Scheduled</Badge>;
         }
+        return <Badge variant="secondary">Inactive</Badge>;
+    };
+
+    const getTestTypeBadge = (testType: string) => {
+        if (testType === "FREE") {
+            return <Badge variant="outline" className="text-green-600 border-green-600">Free</Badge>;
+        }
+        return <Badge variant="outline" className="text-blue-600 border-blue-600">Paid</Badge>;
+    };
+
+    const formatDateRange = (startDate: string | null, endDate: string | null) => {
+        if (!startDate && !endDate) return "No date limit";
+        if (startDate && endDate) {
+            return `${format(new Date(startDate), "MMM dd, yyyy")} - ${format(new Date(endDate), "MMM dd, yyyy")}`;
+        }
+        if (startDate) return `From ${format(new Date(startDate), "MMM dd, yyyy")}`;
+        if (endDate) return `Until ${format(new Date(endDate), "MMM dd, yyyy")}`;
+        return "";
     };
 
     return (
@@ -131,7 +165,7 @@ export function TestsTable({ initialData }: TestsTableProps) {
                             </div>
                         ))}
                     </div>
-                ) : initialData.data.length === 0 ? (
+                ) : initialData.content.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                         No tests found. Create your first test to get started.
                     </div>
@@ -143,7 +177,7 @@ export function TestsTable({ initialData }: TestsTableProps) {
                         onValueChange={handleTestExpand}
                         className="space-y-4"
                     >
-                        {initialData.data.map((test) => (
+                        {initialData.content.map((test) => (
                             <AccordionItem
                                 key={test.id}
                                 value={test.id.toString()}
@@ -156,21 +190,20 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                                 <h3 className="font-semibold text-lg">{test.title}</h3>
                                                 <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                                                     <span className="flex items-center gap-1">
-                                                        <Clock className="h-3 w-3" />
-                                                        {test.durationMinutes} min
+                                                        <Calendar className="h-3 w-3" />
+                                                        {formatDateRange(test.startDate, test.endDate)}
                                                     </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <FileQuestion className="h-3 w-3" />
-                                                        {test.questions} questions
-                                                    </span>
-                                                    <span>
-                                                        {format(new Date(test.startDate), "MMM dd, yyyy")} - {format(new Date(test.endDate), "MMM dd, yyyy")}
-                                                    </span>
+                                                    {test.descriptionPreview && (
+                                                        <span className="truncate max-w-[200px]">
+                                                            {test.descriptionPreview}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            {getStatusBadge(test.status)}
+                                            {getTestTypeBadge(test.testType)}
+                                            {getStatusBadge(test.status, test.isActive)}
                                             <div className="flex gap-1">
                                                 <Button
                                                     variant="ghost"
@@ -263,17 +296,17 @@ export function TestsTable({ initialData }: TestsTableProps) {
                         <Button
                             variant="outline"
                             onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 0}
+                            disabled={initialData.first}
                         >
                             Previous
                         </Button>
                         <span className="py-2 px-4">
-                            Page {currentPage + 1} of {initialData.totalPages}
+                            Page {initialData.page + 1} of {initialData.totalPages}
                         </span>
                         <Button
                             variant="outline"
                             onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === initialData.totalPages - 1}
+                            disabled={initialData.last}
                         >
                             Next
                         </Button>
@@ -287,7 +320,13 @@ export function TestsTable({ initialData }: TestsTableProps) {
                             <DialogTitle>Test Details</DialogTitle>
                             <DialogDescription>View complete information about this test</DialogDescription>
                         </DialogHeader>
-                        {selectedTest && (
+                        {loadingTestDetails ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-6 w-full" />
+                                <Skeleton className="h-20 w-full" />
+                                <Skeleton className="h-6 w-1/2" />
+                            </div>
+                        ) : selectedTest && (
                             <div className="space-y-4">
                                 <div>
                                     <Label className="text-sm text-muted-foreground">Title</Label>
@@ -295,31 +334,29 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                 </div>
                                 <div>
                                     <Label className="text-sm text-muted-foreground">Description</Label>
-                                    <p className="text-lg">{selectedTest.description}</p>
+                                    <p className="text-lg">{selectedTest.description || "No description"}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <Label className="text-sm text-muted-foreground">Duration</Label>
-                                        <p className="text-lg font-medium">{selectedTest.durationMinutes} minutes</p>
+                                        <Label className="text-sm text-muted-foreground">Test Type</Label>
+                                        <div className="mt-1">{getTestTypeBadge(selectedTest.testType)}</div>
                                     </div>
                                     <div>
-                                        <Label className="text-sm text-muted-foreground">Questions</Label>
-                                        <p className="text-lg font-medium">{selectedTest.questions}</p>
+                                        <Label className="text-sm text-muted-foreground">Status</Label>
+                                        <div className="mt-1">{getStatusBadge(selectedTest.status)}</div>
                                     </div>
-                                </div>
-                                <div>
-                                    <Label className="text-sm text-muted-foreground">Weekly Attempt Limit</Label>
-                                    <p className="text-lg font-medium">{selectedTest.attemptLimitPerWeek} attempts</p>
                                 </div>
                                 <div>
                                     <Label className="text-sm text-muted-foreground">Date Range</Label>
                                     <p className="text-lg font-medium">
-                                        {format(new Date(selectedTest.startDate), "MMM dd, yyyy")} - {format(new Date(selectedTest.endDate), "MMM dd, yyyy")}
+                                        {formatDateRange(selectedTest.startDate, selectedTest.endDate)}
                                     </p>
                                 </div>
                                 <div>
-                                    <Label className="text-sm text-muted-foreground">Status</Label>
-                                    <div className="mt-1">{getStatusBadge(selectedTest.status)}</div>
+                                    <Label className="text-sm text-muted-foreground">Created At</Label>
+                                    <p className="text-lg font-medium">
+                                        {format(new Date(selectedTest.createdAt), "MMM dd, yyyy HH:mm")}
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -333,7 +370,13 @@ export function TestsTable({ initialData }: TestsTableProps) {
                             <DialogTitle>Edit Test</DialogTitle>
                             <DialogDescription>Update test details and settings</DialogDescription>
                         </DialogHeader>
-                        {selectedTest && (
+                        {loadingTestDetails ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-20 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        ) : selectedTest && (
                             <TestsHeader
                                 test={selectedTest}
                                 onClose={() => {

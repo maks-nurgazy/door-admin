@@ -1,16 +1,33 @@
 import {api} from "@/lib/axios";
 
-export interface Test {
+// Enums matching backend
+export type TestStatus = 'ACTIVE' | 'IN_ACTIVE';
+export type TestType = 'FREE' | 'PAID';
+
+// List view DTO (lightweight)
+export interface TestPackageListDto {
     id: number;
     title: string;
-    description: string;
-    status: 'ACTIVE' | 'IN_ACTIVE';
-    startDate: string;
-    endDate: string;
-    attemptLimitPerWeek: number;
-    durationMinutes: number;
-    questions: number;
+    descriptionPreview: string | null;
+    status: TestStatus;
+    testType: TestType;
+    startDate: string | null;
+    endDate: string | null;
+    isActive: boolean;
     createdAt: string;
+}
+
+// Detail view DTO
+export interface TestPackageDto {
+    id: number;
+    title: string;
+    description: string | null;
+    status: TestStatus;
+    testType: TestType;
+    startDate: string | null;
+    endDate: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface TestSection {
@@ -37,30 +54,54 @@ export interface TestSectionQuestion {
     updatedAt: string;
 }
 
-export interface TestsResponse {
-    data: Test[];
-    currentPage: number;
-    pageSize: number;
-    totalItems: number;
+// Page response matching backend PageResponse
+export interface PageResponse<T> {
+    content: T[];
+    page: number;
+    size: number;
+    totalElements: number;
     totalPages: number;
+    first: boolean;
+    last: boolean;
 }
+
+export type TestsResponse = PageResponse<TestPackageListDto>;
 
 export interface TestFilters {
     search?: string;
+    status?: TestStatus;
+    testType?: TestType;
     page?: number;
     size?: number;
 }
 
-export interface CreateTestDto {
+export interface CreateTestPackageRequest {
     title: string;
-    description: string;
-    startDate: string;
-    endDate: string;
-    attemptLimitPerWeek: number;
-    status: 'ACTIVE' | 'IN_ACTIVE';
+    description?: string;
+    testCode?: string;
+    language?: string;
+    variant?: number;
+    totalDurationMinutes?: number;
+    status: TestStatus;
+    testType: TestType;
+    startDate?: string;
+    endDate?: string;
+    sectionIds?: number[];
 }
 
-export type UpdateTestDto = CreateTestDto
+export interface UpdateTestPackageRequest {
+    title?: string;
+    description?: string;
+    testCode?: string;
+    language?: string;
+    variant?: number;
+    totalDurationMinutes?: number;
+    status?: TestStatus;
+    testType?: TestType;
+    startDate?: string;
+    endDate?: string;
+    sectionIds?: number[];
+}
 
 export const testsApi = {
     getTests: async (filters?: TestFilters): Promise<TestsResponse> => {
@@ -76,7 +117,15 @@ export const testsApi = {
             }
 
             if (filters?.search) {
-                searchQueries.push(`search=title:like:${filters.search}`);
+                searchQueries.push(`search=${encodeURIComponent(filters.search)}`);
+            }
+
+            if (filters?.status) {
+                searchQueries.push(`status=${filters.status}`);
+            }
+
+            if (filters?.testType) {
+                searchQueries.push(`testType=${filters.testType}`);
             }
 
             const queryString = searchQueries.join('&');
@@ -90,7 +139,7 @@ export const testsApi = {
         }
     },
 
-    getTest: async (id: number): Promise<Test> => {
+    getTest: async (id: number): Promise<TestPackageDto> => {
         try {
             const response = await api.get(`/admin/tests/${id}`);
             return response.data;
@@ -100,7 +149,7 @@ export const testsApi = {
         }
     },
 
-    createTest: async (test: CreateTestDto): Promise<Test> => {
+    createTest: async (test: CreateTestPackageRequest): Promise<TestPackageDto> => {
         try {
             const response = await api.post('/admin/tests', test);
             return response.data;
@@ -110,7 +159,7 @@ export const testsApi = {
         }
     },
 
-    updateTest: async (id: number, test: UpdateTestDto): Promise<Test> => {
+    updateTest: async (id: number, test: UpdateTestPackageRequest): Promise<TestPackageDto> => {
         try {
             const response = await api.put(`/admin/tests/${id}`, test);
             return response.data;

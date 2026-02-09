@@ -3,15 +3,31 @@
 import { DefaultSession } from "next-auth";
 import { DefaultJWT } from "next-auth/jwt";
 
+export interface PermissionDto {
+    id: number;
+    name: string;
+    description: string;
+    resource: string;
+    action: string;
+}
+
+export interface RoleDto {
+    id: number;
+    name: string;
+    description: string;
+    permissions: PermissionDto[];
+}
+
 declare module "next-auth" {
     interface User {
         id: number;
         phone: string;
         username: string;
-        role: string;
         firstName: string;
         lastName: string;
         status: string;
+        roles: RoleDto[];
+        permissions: PermissionDto[];
         accessToken: string;
         refreshToken: string;
     }
@@ -22,10 +38,11 @@ declare module "next-auth" {
             id: number;
             phone: string;
             username: string;
-            role: string;
             firstName: string;
             lastName: string;
             status: string;
+            roles: RoleDto[];
+            permissions: PermissionDto[];
         };
         accessToken: string;
         refreshToken: string;
@@ -39,10 +56,11 @@ declare module "next-auth/jwt" {
             id: number;
             phone: string;
             username: string;
-            role: string;
             firstName: string;
             lastName: string;
             status: string;
+            roles: RoleDto[];
+            permissions: PermissionDto[];
         };
         accessToken: string;
         refreshToken: string;

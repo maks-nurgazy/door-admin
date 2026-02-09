@@ -26,58 +26,68 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 try {
+                    const apiUrl = `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/admin/auth/login`;
+                    console.log("Login API URL:", apiUrl);
+
                     // POST /admin/auth/login - Admin authentication endpoint
-                    // Only users with SUPER_ADMIN role can authenticate here
-                    const res = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/admin/auth/login`,
-                        {
-                            method: "POST",
-                            headers: {"Content-Type": "application/json"},
-                            body: JSON.stringify({
-                                username: credentials.username,
-                                password: credentials.password,
-                            }),
-                        }
-                    );
+                    const res = await fetch(apiUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                        },
+                        body: JSON.stringify({
+                            username: credentials.username,
+                            password: credentials.password,
+                        }),
+                    });
+
+                    console.log("Login response status:", res.status);
 
                     if (!res.ok) {
-                        let errorData: any;
+                        const errorText = await res.text();
+                        console.error("Login error response:", errorText);
+
+                        let errorMessage = "Failed to sign in";
                         try {
-                            errorData = await res.json();
+                            const errorData = JSON.parse(errorText);
+                            errorMessage = errorData.message || errorData.error || errorMessage;
                         } catch {
-                            errorData = {message: "An unknown error occurred"};
+                            errorMessage = errorText || errorMessage;
                         }
 
-                        throw new Error(errorData.message || "Failed to sign in");
+                        throw new Error(errorMessage);
                     }
 
-                    // e.g.
+                    // Response structure:
                     // {
                     //   "accessToken": "...",
                     //   "refreshToken": "...",
                     //   "userInfo": {
-                    //     "id": 123,
-                    //     "phone": "1111111",
-                    //     "username": "someUsername",
-                    //     "role": "USER",
-                    //     "firstName": "John",
-                    //     "lastName": "Doe",
-                    //     "status": "ACTIVE"
+                    //     "id": 1,
+                    //     "username": "admin",
+                    //     "firstName": "System",
+                    //     "lastName": "Administrator",
+                    //     "status": "ACTIVE",
+                    //     "phone": "+1234567890",
+                    //     "roles": [{ id, name, description, permissions: [...] }],
+                    //     "permissions": [{ id, name, description, resource, action }]
                     //   }
                     // }
                     const data = await res.json();
 
-                    console.log("data: " + data);
+                    console.log("Login response:", data);
 
                     // Return a user object with everything we need for session
                     return {
                         id: data.userInfo.id,
                         phone: data.userInfo.phone,
                         username: data.userInfo.username,
-                        role: data.userInfo.role,
                         firstName: data.userInfo.firstName,
                         lastName: data.userInfo.lastName,
                         status: data.userInfo.status,
+                        roles: data.userInfo.roles || [],
+                        permissions: data.userInfo.permissions || [],
                         accessToken: data.accessToken,
                         refreshToken: data.refreshToken,
                     };
@@ -96,10 +106,11 @@ export const authOptions: NextAuthOptions = {
                     id: user.id as any,
                     phone: user.phone,
                     username: user.username,
-                    role: user.role,
                     firstName: user.firstName,
                     lastName: user.lastName,
                     status: user.status,
+                    roles: user.roles,
+                    permissions: user.permissions,
                 };
                 token.accessToken = user.accessToken;
                 token.refreshToken = user.refreshToken;
@@ -121,10 +132,11 @@ export const authOptions: NextAuthOptions = {
                 id: token.user.id,
                 phone: token.user.phone,
                 username: token.user.username,
-                role: token.user.role,
                 firstName: token.user.firstName,
                 lastName: token.user.lastName,
                 status: token.user.status,
+                roles: token.user.roles,
+                permissions: token.user.permissions,
             };
             session.accessToken = token.accessToken;
             session.refreshToken = token.refreshToken;
@@ -171,11 +183,23 @@ async function refreshAccessToken(token: any) {
             throw refreshedTokens;
         }
 
+        // The refresh endpoint returns the same AdminLoginResponse structure
         return {
             ...token,
             accessToken: refreshedTokens.accessToken,
             accessTokenExpires: Date.now() + 60 * 60 * 1000, // 1 hour
-            refreshToken: refreshedTokens.refreshToken ?? token.refreshToken, // Fall back to old refresh token
+            refreshToken: refreshedTokens.refreshToken ?? token.refreshToken,
+            // Update user info if provided
+            user: refreshedTokens.userInfo ? {
+                id: refreshedTokens.userInfo.id,
+                phone: refreshedTokens.userInfo.phone,
+                username: refreshedTokens.userInfo.username,
+                firstName: refreshedTokens.userInfo.firstName,
+                lastName: refreshedTokens.userInfo.lastName,
+                status: refreshedTokens.userInfo.status,
+                roles: refreshedTokens.userInfo.roles || token.user.roles,
+                permissions: refreshedTokens.userInfo.permissions || token.user.permissions,
+            } : token.user,
         };
     } catch (error) {
         console.log("Error refreshing access token", error);

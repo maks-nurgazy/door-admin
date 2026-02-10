@@ -1,19 +1,7 @@
 "use client";
 
-import React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -21,186 +9,85 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { AnalogyContent } from "@/lib/api/questions";
+import { QuestionOption } from "@/lib/api/questions";
+import { TextContentInput } from "./text-content-input";
 
-const analogySchema = z.object({
-    examplePair: z.object({
-        id: z.number(),
-        firstWord: z.string().min(1, "First word is required"),
-        secondWord: z.string().min(1, "Second word is required"),
-    }),
-    correctAnswer: z.number().min(1, "Correct answer is required"),
-    options: z.array(z.object({
-        id: z.number(),
-        firstWord: z.string().min(1, "First word is required"),
-        secondWord: z.string().min(1, "Second word is required"),
-    })).min(2, "At least 2 options are required"),
-    relationshipType: z.string(),
-});
-
-export type AnalogyFormValues = z.infer<typeof analogySchema>;
+export interface AnalogySubFormData {
+    options: QuestionOption[];
+    correctOptionId: number;
+}
 
 interface AnalogyFormProps {
-    content?: AnalogyContent;
-    onChange: (content: AnalogyContent) => void;
+    content?: AnalogySubFormData | null;
+    onChange: (content: AnalogySubFormData) => void;
+}
+
+const DEFAULT_LABELS = ['A', 'B', 'C', 'D'];
+
+function makeDefaultOptions(): QuestionOption[] {
+    return DEFAULT_LABELS.map((label, i) => ({
+        id: i + 1,
+        label,
+        value: "",
+        displayType: 'TEXT',
+        isCorrect: i === 0,
+    }));
 }
 
 export function AnalogyForm({ content, onChange }: AnalogyFormProps) {
-    const form = useForm<AnalogyFormValues>({
-        resolver: zodResolver(analogySchema),
-        defaultValues: content ? {
-            examplePair: content.examplePair,
-            correctAnswer: content.correctAnswer,
-            options: content.options,
-            relationshipType: content.relationshipType,
-        } : {
-            examplePair: {
-                id: 0,
-                firstWord: "",
-                secondWord: "",
-            },
-            correctAnswer: 1,
-            options: [
-                { id: 1, firstWord: "", secondWord: "" },
-                { id: 2, firstWord: "", secondWord: "" },
-                { id: 3, firstWord: "", secondWord: "" },
-                { id: 4, firstWord: "", secondWord: "" },
-            ],
-            relationshipType: "",
-        },
-    });
+    const [options, setOptions] = useState<QuestionOption[]>(
+        content?.options ?? makeDefaultOptions()
+    );
+    const [correctOptionId, setCorrectOptionId] = useState<number>(
+        content?.correctOptionId ?? 1
+    );
 
-    // Auto-update parent whenever form values change
-    const watchedValues = form.watch();
-    const prevValuesRef = React.useRef<string>('');
+    useEffect(() => {
+        onChange({ options, correctOptionId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [options, correctOptionId]);
 
-    React.useEffect(() => {
-        const currentValues = JSON.stringify(watchedValues);
-        // Only update if values actually changed to prevent infinite loops
-        if (currentValues !== prevValuesRef.current) {
-            prevValuesRef.current = currentValues;
-            onChange(watchedValues);
-        }
-    }, [watchedValues]);
+    const updateOption = (id: number, updated: Partial<QuestionOption>) => {
+        setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, ...updated } : opt));
+    };
 
-    const handleSubmit = (data: AnalogyFormValues) => {
-        onChange(data);
+    const handleCorrectChange = (value: string) => {
+        const newId = parseInt(value);
+        setCorrectOptionId(newId);
+        setOptions(prev => prev.map(opt => ({ ...opt, isCorrect: opt.id === newId })));
     };
 
     return (
-        <Form {...form}>
-            <div className="space-y-4">
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Example Pair</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="examplePair.firstWord"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>First Word</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="examplePair.secondWord"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Second Word</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
+        <div className="space-y-4">
+            <h3 className="text-sm font-semibold">Options</h3>
+            {options.map((opt) => (
+                <div key={opt.id} className="flex items-start gap-3">
+                    <span className="pt-2 w-5 text-sm font-medium text-muted-foreground">{opt.label}</span>
+                    <div className="flex-1">
+                        <TextContentInput
+                            value={{ displayType: opt.displayType, value: opt.value }}
+                            onChange={(tc) => updateOption(opt.id, { displayType: tc.displayType, value: tc.value })}
+                            placeholder={`Option ${opt.label}`}
                         />
                     </div>
                 </div>
+            ))}
 
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Options</h3>
-                    {form.watch("options").map((_, index) => (
-                        <div key={index} className="space-y-2">
-                            <h4 className="font-medium">Option {index + 1}</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name={`options.${index}.firstWord`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>First Word</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name={`options.${index}.secondWord`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Second Word</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <FormField
-                    control={form.control}
-                    name="correctAnswer"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Correct Answer</FormLabel>
-                            <Select
-                                value={field.value?.toString()}
-                                onValueChange={(value) => field.onChange(parseInt(value))}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {form.watch("options").map((option, index) => (
-                                        <SelectItem key={option.id} value={option.id.toString()}>
-                                            Option {option.id}: {option.firstWord} - {option.secondWord}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="relationshipType"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Relationship Type</FormLabel>
-                            <FormControl>
-                                <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+            <div className="space-y-1.5">
+                <Label>Correct Answer</Label>
+                <Select value={correctOptionId.toString()} onValueChange={handleCorrectChange}>
+                    <SelectTrigger className="w-48">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {options.map((opt) => (
+                            <SelectItem key={opt.id} value={opt.id.toString()}>
+                                {opt.label}: {opt.value || '(empty)'}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
-        </Form>
+        </div>
     );
 }

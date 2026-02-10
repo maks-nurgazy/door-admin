@@ -6,7 +6,7 @@ import { PageResponse } from "@/lib/api/tests";
 export type QuestionType = 'ANALOGY' | 'ALGEBRAIC_EXPRESSION' | 'MATH_COMPARISON' | 'SENTENCE_COMPLETION' | 'READING_COMPREHENSION';
 
 // Matches backend DisplayType enum
-export type DisplayType = 'TEXT' | 'LATEX' | 'IMAGE';
+export type DisplayType = 'TEXT' | 'LATEX' | 'SVG' | 'IMAGE' | 'NONE';
 
 // Matches backend TextContent
 export interface TextContent {

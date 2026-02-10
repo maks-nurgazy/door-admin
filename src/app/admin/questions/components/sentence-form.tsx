@@ -1,19 +1,7 @@
 "use client";
 
-import React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useState, useEffect } from "react";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -21,126 +9,85 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { SentenceCompletionContent } from "@/lib/api/questions";
+import { QuestionOption } from "@/lib/api/questions";
+import { TextContentInput } from "./text-content-input";
 
-const sentenceSchema = z.object({
-    sentence: z.string().min(1, "Sentence is required"),
-    correctAnswer: z.number().min(1, "Correct answer is required"),
-    options: z.array(z.object({
-        id: z.number(),
-        text: z.string().min(1, "Option text is required"),
-    })).min(2, "At least 2 options are required"),
-});
-
-export type SentenceFormValues = z.infer<typeof sentenceSchema>;
+export interface SentenceSubFormData {
+    options: QuestionOption[];
+    correctOptionId: number;
+}
 
 interface SentenceFormProps {
-    content?: SentenceCompletionContent;
-    onChange: (content: SentenceCompletionContent) => void;
+    content?: SentenceSubFormData | null;
+    onChange: (content: SentenceSubFormData) => void;
+}
+
+const DEFAULT_LABELS = ['A', 'B', 'C', 'D'];
+
+function makeDefaultOptions(): QuestionOption[] {
+    return DEFAULT_LABELS.map((label, i) => ({
+        id: i + 1,
+        label,
+        value: "",
+        displayType: 'TEXT',
+        isCorrect: i === 0,
+    }));
 }
 
 export function SentenceForm({ content, onChange }: SentenceFormProps) {
-    const form = useForm<SentenceFormValues>({
-        resolver: zodResolver(sentenceSchema),
-        defaultValues: content ? {
-            sentence: content.sentence,
-            correctAnswer: content.correctAnswer,
-            options: content.options,
-        } : {
-            sentence: "",
-            correctAnswer: 1,
-            options: [
-                { id: 1, text: "" },
-                { id: 2, text: "" },
-                { id: 3, text: "" },
-                { id: 4, text: "" },
-            ],
-        },
-    });
+    const [options, setOptions] = useState<QuestionOption[]>(
+        content?.options ?? makeDefaultOptions()
+    );
+    const [correctOptionId, setCorrectOptionId] = useState<number>(
+        content?.correctOptionId ?? 1
+    );
 
-    // Auto-update parent whenever form values change
-    const watchedValues = form.watch();
-    const prevValuesRef = React.useRef<string>('');
+    useEffect(() => {
+        onChange({ options, correctOptionId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [options, correctOptionId]);
 
-    React.useEffect(() => {
-        const currentValues = JSON.stringify(watchedValues);
-        if (currentValues !== prevValuesRef.current) {
-            prevValuesRef.current = currentValues;
-            onChange(watchedValues);
-        }
-    }, [watchedValues, onChange]);
+    const updateOption = (id: number, updated: Partial<QuestionOption>) => {
+        setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, ...updated } : opt));
+    };
+
+    const handleCorrectChange = (value: string) => {
+        const newId = parseInt(value);
+        setCorrectOptionId(newId);
+        setOptions(prev => prev.map(opt => ({ ...opt, isCorrect: opt.id === newId })));
+    };
 
     return (
-        <Form {...form}>
-            <div className="space-y-4">
-                <FormField
-                    control={form.control}
-                    name="sentence"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Sentence (use ___ for blank)</FormLabel>
-                            <FormControl>
-                                <Textarea {...field} rows={4} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <div className="space-y-2">
-                    <FormLabel>Options</FormLabel>
-                    <div className="grid grid-cols-2 gap-4">
-                        {form.watch("options").map((_, index) => (
-                            <FormField
-                                key={index}
-                                control={form.control}
-                                name={`options.${index}.text`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <div className="flex gap-2">
-                                                <span className="py-2 w-6">
-                                                    {String.fromCharCode(65 + index)}
-                                                </span>
-                                                <Input {...field} />
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        ))}
+        <div className="space-y-4">
+            <h3 className="text-sm font-semibold">Options</h3>
+            {options.map((opt) => (
+                <div key={opt.id} className="flex items-start gap-3">
+                    <span className="pt-2 w-5 text-sm font-medium text-muted-foreground">{opt.label}</span>
+                    <div className="flex-1">
+                        <TextContentInput
+                            value={{ displayType: opt.displayType, value: opt.value }}
+                            onChange={(tc) => updateOption(opt.id, { displayType: tc.displayType, value: tc.value })}
+                            placeholder={`Option ${opt.label}`}
+                        />
                     </div>
                 </div>
+            ))}
 
-                <FormField
-                    control={form.control}
-                    name="correctAnswer"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Correct Answer</FormLabel>
-                            <Select
-                                value={field.value?.toString()}
-                                onValueChange={(value) => field.onChange(parseInt(value))}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {form.watch("options").map((option) => (
-                                        <SelectItem key={option.id} value={option.id.toString()}>
-                                            Option {option.id}: {option.text || '(empty)'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+            <div className="space-y-1.5">
+                <Label>Correct Answer</Label>
+                <Select value={correctOptionId.toString()} onValueChange={handleCorrectChange}>
+                    <SelectTrigger className="w-48">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {options.map((opt) => (
+                            <SelectItem key={opt.id} value={opt.id.toString()}>
+                                {opt.label}: {opt.value || '(empty)'}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
-        </Form>
+        </div>
     );
 }

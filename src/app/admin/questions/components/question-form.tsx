@@ -11,7 +11,6 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,13 +33,19 @@ import { ComparisonForm } from "./comparison-form";
 import { MathForm } from "./math-form";
 import { SentenceForm } from "./sentence-form";
 import { ReadingComprehensionForm, ReadingComprehensionFormData } from "./reading-comprehension-form";
+import { TextContentInput } from "./text-content-input";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getQuestionTypes } from "@/lib/question-types";
 import { readingPassagesApi, ReadingPassageListItem } from "@/lib/api/reading-passages";
 
+const DISPLAY_TYPES = ['TEXT', 'LATEX', 'SVG', 'IMAGE', 'NONE'] as const;
+
 const questionSchema = z.object({
-    questionText: z.string().min(3, "Question text must be at least 3 characters"),
+    questionText: z.object({
+        displayType: z.enum(DISPLAY_TYPES),
+        value: z.string().min(1, "Question text value is required"),
+    }),
     type: z.enum(["ANALOGY", "ALGEBRAIC_EXPRESSION", "MATH_COMPARISON", "SENTENCE_COMPLETION", "READING_COMPREHENSION"]),
     topicIds: z.array(z.number()).min(1, "At least one topic is required"),
     explanation: z.string().optional(),
@@ -71,6 +76,7 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
             options: question.content.options,
             correctOptionId: question.content.correctOptionId,
             comparisonTable: (question.content as any).comparisonTable,
+            readingPassageId: question.passage?.id,
         } : null
     );
     const [passages, setPassages] = useState<ReadingPassageListItem[]>([]);
@@ -89,13 +95,16 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
     const form = useForm<QuestionFormValues>({
         resolver: zodResolver(questionSchema),
         defaultValues: question ? {
-            questionText: question.content?.questionText?.value ?? "",
+            questionText: {
+                displayType: question.content?.questionText?.displayType ?? 'TEXT',
+                value: question.content?.questionText?.value ?? "",
+            },
             type: question.type,
             topicIds: getTopicIds(question),
             explanation: question.explanation ?? "",
             passageId: question.passage?.id,
         } : {
-            questionText: "",
+            questionText: { displayType: 'TEXT', value: "" },
             type: "ANALOGY",
             topicIds: [],
             explanation: "",
@@ -114,9 +123,9 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
             // Build the backend-compatible content object with the Jackson discriminator
             const content: QuestionContent = {
                 questionType: data.type as QuestionType,
-                questionText: { displayType: 'TEXT', value: data.questionText },
+                questionText: data.questionText,
                 options: subFormContent.options ?? [],
-                correctOptionId: subFormContent.correctOptionId ?? subFormContent.correctAnswer,
+                correctOptionId: subFormContent.correctOptionId,
                 ...(data.type === 'MATH_COMPARISON' && subFormContent.comparisonTable
                     ? { comparisonTable: subFormContent.comparisonTable }
                     : {}),
@@ -162,7 +171,12 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                         <FormItem>
                             <FormLabel>Question Text</FormLabel>
                             <FormControl>
-                                <Input {...field} />
+                                <TextContentInput
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    rows={2}
+                                    placeholder="Enter question text..."
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -243,11 +257,8 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                         onChange={(newContent) => {
                             if (newContent?.readingPassageId) {
                                 form.setValue('passageId', newContent.readingPassageId, { shouldValidate: true });
-                                const { readingPassageId, ...rest } = newContent;
-                                setSubFormContent(rest);
-                            } else {
-                                setSubFormContent(newContent);
                             }
+                            setSubFormContent(newContent);
                         }}
                     />
                 )}

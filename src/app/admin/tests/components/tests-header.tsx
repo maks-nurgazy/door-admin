@@ -45,62 +45,15 @@ const testSchema = z.object({
 
 type TestFormValues = z.infer<typeof testSchema>;
 
-interface TestsHeaderProps {
-    test?: TestPackageDto;
-    onClose?: () => void;
+interface TestFormProps {
+    form: ReturnType<typeof useForm<TestFormValues>>;
+    onSubmit: (data: TestFormValues) => Promise<void>;
+    onCancel: () => void;
+    isEdit: boolean;
 }
 
-export function TestsHeader({ test, onClose }: TestsHeaderProps) {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const router = useRouter();
-
-    const form = useForm<TestFormValues>({
-        resolver: zodResolver(testSchema),
-        defaultValues: test ? {
-            title: test.title,
-            description: test.description || "",
-            startDate: test.startDate || "",
-            endDate: test.endDate || "",
-            status: test.status,
-            testType: test.testType,
-        } : {
-            title: "",
-            description: "",
-            startDate: "",
-            endDate: "",
-            status: "IN_ACTIVE",
-            testType: "FREE",
-        },
-    });
-
-    const onSubmit = async (data: TestFormValues) => {
-        try {
-            const payload = {
-                title: data.title,
-                description: data.description || undefined,
-                status: data.status as TestStatus,
-                testType: data.testType as TestType,
-                startDate: data.startDate || undefined,
-                endDate: data.endDate || undefined,
-            };
-
-            if (test) {
-                await testsApi.updateTest(test.id, payload);
-            } else {
-                await testsApi.createTest(payload);
-            }
-            setIsDialogOpen(false);
-            form.reset();
-            if (onClose) {
-                onClose();
-            }
-            router.refresh();
-        } catch (error) {
-            console.error('Failed to handle test:', error);
-        }
-    };
-
-    const TestForm = () => (
+function TestForm({ form, onSubmit, onCancel, isEdit }: TestFormProps) {
+    return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -212,30 +165,91 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
                     />
                 </div>
                 <div className="flex justify-end gap-3">
-                    <Button
-                        variant="outline"
-                        type="button"
-                        onClick={() => {
-                            if (test) {
-                                onClose?.();
-                            } else {
-                                setIsDialogOpen(false);
-                                form.reset();
-                            }
-                        }}
-                    >
+                    <Button variant="outline" type="button" onClick={onCancel}>
                         Cancel
                     </Button>
                     <Button type="submit">
-                        {test ? "Save Changes" : "Add Test"}
+                        {isEdit ? "Save Changes" : "Add Test"}
                     </Button>
                 </div>
             </form>
         </Form>
     );
+}
+
+interface TestsHeaderProps {
+    test?: TestPackageDto;
+    onClose?: () => void;
+}
+
+export function TestsHeader({ test, onClose }: TestsHeaderProps) {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const router = useRouter();
+
+    const form = useForm<TestFormValues>({
+        resolver: zodResolver(testSchema),
+        defaultValues: test ? {
+            title: test.title,
+            description: test.description || "",
+            startDate: test.startDate || "",
+            endDate: test.endDate || "",
+            status: test.status,
+            testType: test.testType,
+        } : {
+            title: "",
+            description: "",
+            startDate: "",
+            endDate: "",
+            status: "IN_ACTIVE",
+            testType: "FREE",
+        },
+    });
+
+    const onSubmit = async (data: TestFormValues) => {
+        try {
+            const payload = {
+                title: data.title,
+                description: data.description || undefined,
+                status: data.status as TestStatus,
+                testType: data.testType as TestType,
+                startDate: data.startDate || undefined,
+                endDate: data.endDate || undefined,
+            };
+
+            if (test) {
+                await testsApi.updateTest(test.id, payload);
+            } else {
+                await testsApi.createTest(payload);
+            }
+            setIsDialogOpen(false);
+            form.reset();
+            if (onClose) {
+                onClose();
+            }
+            router.refresh();
+        } catch (error) {
+            console.error('Failed to handle test:', error);
+        }
+    };
+
+    const handleCancel = () => {
+        if (test) {
+            onClose?.();
+        } else {
+            setIsDialogOpen(false);
+            form.reset();
+        }
+    };
 
     if (test) {
-        return <TestForm />;
+        return (
+            <TestForm
+                form={form}
+                onSubmit={onSubmit}
+                onCancel={handleCancel}
+                isEdit={true}
+            />
+        );
     }
 
     return (
@@ -253,7 +267,12 @@ export function TestsHeader({ test, onClose }: TestsHeaderProps) {
                         <DialogTitle>Add New Test</DialogTitle>
                         <DialogDescription>Create a new test package with details and settings</DialogDescription>
                     </DialogHeader>
-                    <TestForm />
+                    <TestForm
+                        form={form}
+                        onSubmit={onSubmit}
+                        onCancel={handleCancel}
+                        isEdit={false}
+                    />
                 </DialogContent>
             </Dialog>
         </div>

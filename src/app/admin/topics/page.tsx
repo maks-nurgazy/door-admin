@@ -1,38 +1,17 @@
-import {Suspense} from "react";
-import {TopicsTable} from "./components/topics-table";
-import {TopicsHeader} from "./components/topics-header";
-import {TopicsFilters} from "./components/topics-filters";
-import {topicsApi} from "@/lib/api/topics";
+import { Suspense } from "react";
+import { TopicsTable } from "./components/topics-table";
+import { TopicsHeader } from "./components/topics-header";
+import { topicsApi } from "@/lib/api/topics";
 import Loading from "@/app/admin/users/loading";
 
-interface PageProps {
-    searchParams: Promise<{
-        search?: string;
-        page?: string;
-    }>;
-}
-
-export default async function TopicsPage({searchParams}: PageProps) {
-    const resolvedSearchParams = await searchParams;
-    const filters = {
-        search: resolvedSearchParams.search,
-        page: resolvedSearchParams.page ? parseInt(resolvedSearchParams.page) - 1 : 0,
-    };
-
-    const initialData = await topicsApi.getTopics(filters);
+export default async function TopicsPage() {
+    const topics = await topicsApi.getTopics();
 
     return (
         <div className="space-y-6">
-            <TopicsHeader/>
-            <Suspense fallback={
-                <div className="flex gap-4">
-                    <div className="h-10 w-[300px] bg-muted animate-pulse rounded-md"/>
-                </div>
-            }>
-                <TopicsFilters/>
-            </Suspense>
-            <Suspense fallback={<Loading/>}>
-                <TopicsTable initialData={initialData}/>
+            <TopicsHeader />
+            <Suspense fallback={<Loading />}>
+                <TopicsTable initialData={topics} />
             </Suspense>
         </div>
     );

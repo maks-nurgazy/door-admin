@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
     Table,
     TableBody,
@@ -14,8 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil, Trash2, Eye } from "lucide-react";
-import { Topic, TopicsResponse, topicsApi } from "@/lib/api/topics";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Topic, topicsApi } from "@/lib/api/topics";
 import {
     Dialog,
     DialogContent,
@@ -45,54 +43,85 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 const topicSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(255, "Title must be less than 255 characters"),
+    description: z.string().optional(),
 });
 
 type TopicFormValues = z.infer<typeof topicSchema>;
 
-interface TopicsTableProps {
-    initialData: TopicsResponse;
+interface TopicEditFormProps {
+    form: ReturnType<typeof useForm<TopicFormValues>>;
+    onSubmit: (data: TopicFormValues) => Promise<void>;
+    onCancel: () => void;
 }
 
-// Mock sections data for demonstration
-const mockSections = [
-    { id: 1, title: "Mathematics Part 1" },
-    { id: 2, title: "Reading Comprehension" },
-    { id: 3, title: "Grammar Basics" },
-];
+function TopicEditForm({ form, onSubmit, onCancel }: TopicEditFormProps) {
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Topic Title</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Description (Optional)</FormLabel>
+                            <FormControl>
+                                <Textarea
+                                    placeholder="Enter topic description..."
+                                    className="resize-none"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="flex justify-end gap-3">
+                    <Button variant="outline" type="button" onClick={onCancel}>
+                        Cancel
+                    </Button>
+                    <Button type="submit">
+                        Save Changes
+                    </Button>
+                </div>
+            </form>
+        </Form>
+    );
+}
+
+interface TopicsTableProps {
+    initialData: Topic[];
+}
 
 export function TopicsTable({ initialData }: TopicsTableProps) {
     const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const [isLoading, setIsLoading] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
 
-    const currentPage = searchParams.get("page")
-        ? parseInt(searchParams.get("page")!) - 1
-        : 0;
-
     const form = useForm<TopicFormValues>({
         resolver: zodResolver(topicSchema),
+        defaultValues: { title: "", description: "" },
     });
-
-    const handlePageChange = async (newPage: number) => {
-        setIsLoading(true);
-        try {
-            const params = new URLSearchParams(searchParams.toString());
-            params.set("page", (newPage + 1).toString());
-            router.push(`${pathname}?${params.toString()}`);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleView = (topic: Topic) => {
         setSelectedTopic(topic);
@@ -101,18 +130,17 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
 
     const handleEdit = (topic: Topic) => {
         setSelectedTopic(topic);
-        form.reset({ title: topic.title });
+        form.reset({ title: topic.title, description: topic.description ?? "" });
         setIsEditDialogOpen(true);
     };
 
-    const handleDelete = async (topic: Topic) => {
+    const handleDelete = (topic: Topic) => {
         setTopicToDelete(topic);
         setIsDeleteDialogOpen(true);
     };
 
     const confirmDelete = async () => {
         if (!topicToDelete) return;
-
         try {
             await topicsApi.deleteTopic(topicToDelete.id);
             router.refresh();
@@ -126,9 +154,11 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
 
     const onSubmit = async (data: TopicFormValues) => {
         if (!selectedTopic) return;
-
         try {
-            await topicsApi.updateTopic(selectedTopic.id, data);
+            await topicsApi.updateTopic(selectedTopic.id, {
+                title: data.title,
+                description: data.description || undefined,
+            });
             setIsEditDialogOpen(false);
             setSelectedTopic(null);
             form.reset();
@@ -138,50 +168,37 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
         }
     };
 
+    const handleEditCancel = () => {
+        setIsEditDialogOpen(false);
+        setSelectedTopic(null);
+        form.reset();
+    };
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Topics Overview</CardTitle>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Associated Sections</TableHead>
-                            <TableHead className="w-[120px]">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            Array.from({ length: 10 }).map((_, index) => (
-                                <TableRow key={index}>
-                                    <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-[300px]" /></TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <Skeleton className="h-8 w-8 rounded-md" />
-                                            <Skeleton className="h-8 w-8 rounded-md" />
-                                            <Skeleton className="h-8 w-8 rounded-md" />
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            initialData.data.map((topic) => (
+                {initialData.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        No topics found. Create your first topic to get started.
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Description</TableHead>
+                                <TableHead className="w-[120px]">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {initialData.map((topic) => (
                                 <TableRow key={topic.id}>
                                     <TableCell className="font-medium">{topic.title}</TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap gap-2">
-                                            {topic.sections.map((sectionId) => (
-                                                <Badge key={sectionId} variant="secondary">
-                                                    {mockSections.find(s => s.id === sectionId)?.title || `Section ${sectionId}`}
-                                                </Badge>
-                                            ))}
-                                            {topic.sections.length === 0 && (
-                                                <span className="text-muted-foreground text-sm">No sections assigned</span>
-                                            )}
-                                        </div>
+                                    <TableCell className="text-muted-foreground">
+                                        {topic.description || "—"}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
@@ -209,31 +226,9 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-
-                {initialData.totalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 0}
-                        >
-                            Previous
-                        </Button>
-                        <span className="py-2 px-4">
-              Page {currentPage + 1} of {initialData.totalPages}
-            </span>
-                        <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === initialData.totalPages - 1}
-                        >
-                            Next
-                        </Button>
-                    </div>
+                            ))}
+                        </TableBody>
+                    </Table>
                 )}
 
                 {/* Delete Confirmation Dialog */}
@@ -243,8 +238,7 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
                                 This action cannot be undone. This will permanently delete the topic
-                                <span className="font-medium"> {topicToDelete?.title}</span> and remove its data
-                                from our servers.
+                                <span className="font-medium"> {topicToDelete?.title}</span>.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -267,7 +261,7 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                         <DialogHeader>
                             <DialogTitle>Topic Details</DialogTitle>
                             <DialogDescription>
-                                View the details of this topic and its associated sections.
+                                View the details of this topic.
                             </DialogDescription>
                         </DialogHeader>
                         {selectedTopic && (
@@ -277,21 +271,8 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                                     <p className="text-lg font-medium">{selectedTopic.title}</p>
                                 </div>
                                 <div>
-                                    <Label className="text-sm text-muted-foreground">Associated Sections</Label>
-                                    <div className="mt-2 space-y-2">
-                                        {selectedTopic.sections.length > 0 ? (
-                                            selectedTopic.sections.map((sectionId) => {
-                                                const section = mockSections.find(s => s.id === sectionId);
-                                                return (
-                                                    <div key={sectionId} className="flex items-center gap-2 p-2 rounded-lg border">
-                                                        <span className="font-medium">{section?.title || `Section ${sectionId}`}</span>
-                                                    </div>
-                                                );
-                                            })
-                                        ) : (
-                                            <p className="text-muted-foreground">No sections associated with this topic</p>
-                                        )}
-                                    </div>
+                                    <Label className="text-sm text-muted-foreground">Description</Label>
+                                    <p className="text-lg">{selectedTopic.description || "No description"}</p>
                                 </div>
                             </div>
                         )}
@@ -304,38 +285,14 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                         <DialogHeader>
                             <DialogTitle>Edit Topic</DialogTitle>
                             <DialogDescription>
-                                Update the topic title. Click save when you're done.
+                                Update the topic details.
                             </DialogDescription>
                         </DialogHeader>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                <FormField
-                                    control={form.control}
-                                    name="title"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Topic Title</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <div className="flex justify-end gap-3">
-                                    <Button variant="outline" type="button" onClick={() => {
-                                        setIsEditDialogOpen(false);
-                                        setSelectedTopic(null);
-                                        form.reset();
-                                    }}>
-                                        Cancel
-                                    </Button>
-                                    <Button type="submit">
-                                        Save Changes
-                                    </Button>
-                                </div>
-                            </form>
-                        </Form>
+                        <TopicEditForm
+                            form={form}
+                            onSubmit={onSubmit}
+                            onCancel={handleEditCancel}
+                        />
                     </DialogContent>
                 </Dialog>
             </CardContent>

@@ -4,53 +4,18 @@ import axios from "axios";
 export interface Topic {
     id: number;
     title: string;
-    sections: any[];
-}
-
-export interface TopicShortDto {
-    id: number;
-    title: string;
-}
-
-export interface TopicsResponse {
-    data: Topic[];
-    currentPage: number;
-    pageSize: number;
-    totalItems: number;
-    totalPages: number;
-}
-
-export interface TopicFilters {
-    search?: string;
-    page?: number;
-    size?: number;
+    description: string | null;
 }
 
 export interface CreateTopicDto {
     title: string;
+    description?: string;
 }
 
 export const topicsApi = {
-    getTopics: async (filters?: TopicFilters): Promise<TopicsResponse> => {
+    getTopics: async (): Promise<Topic[]> => {
         try {
-            const searchQueries: string[] = [];
-
-            if (filters?.page !== undefined) {
-                searchQueries.push(`page=${filters.page}`);
-            }
-
-            if (filters?.size !== undefined) {
-                searchQueries.push(`size=${filters.size}`);
-            }
-
-            if (filters?.search) {
-                searchQueries.push(`search=title:like:${filters.search}`);
-            }
-
-            const queryString = searchQueries.join('&');
-            const url = `/topics${queryString ? `?${queryString}` : ''}`;
-
-            const response = await api.get(url);
+            const response = await api.get('/topics');
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -61,24 +26,6 @@ export const topicsApi = {
                 }
             }
             throw new Error('Failed to fetch topics data');
-        }
-    },
-
-    getAllTopics: async (): Promise<TopicShortDto[]> => {
-        try {
-            const url = `/topics/all`;
-
-            const response = await api.get(url);
-            return response.data;
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Server error: ${error.response.data?.message || error.message}`);
-                } else if (error.request) {
-                    throw new Error('No response received from server. Please check your connection.');
-                }
-            }
-            throw new Error('Failed to fetch all topics');
         }
     },
 

@@ -70,7 +70,7 @@ export const sectionTemplatesApi = {
             }
 
             const queryString = searchQueries.join('&');
-            const url = `/admin/section-templates${queryString ? `?${queryString}` : ''}`;
+            const url = `/section-templates${queryString ? `?${queryString}` : ''}`;
 
             const response = await api.get(url);
             return response.data;
@@ -88,7 +88,7 @@ export const sectionTemplatesApi = {
 
     getAllSectionTemplates: async (): Promise<SectionTemplate[]> => {
         try {
-            const url = `/admin/section-templates/all`;
+            const url = `/section-templates/all`;
             const response = await api.get(url);
             return response.data;
         } catch (error) {
@@ -105,7 +105,7 @@ export const sectionTemplatesApi = {
 
     getSectionTemplate: async (id: number): Promise<SectionTemplate> => {
         try {
-            const response = await api.get(`/admin/section-templates/${id}`);
+            const response = await api.get(`/section-templates/${id}`);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -119,7 +119,7 @@ export const sectionTemplatesApi = {
 
     createSectionTemplate: async (template: CreateSectionTemplateDto): Promise<SectionTemplate> => {
         try {
-            const response = await api.post('/admin/section-templates', template);
+            const response = await api.post('/section-templates', template);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -133,7 +133,7 @@ export const sectionTemplatesApi = {
 
     updateSectionTemplate: async (id: number, template: UpdateSectionTemplateDto): Promise<SectionTemplate> => {
         try {
-            const response = await api.put(`/admin/section-templates/${id}`, template);
+            const response = await api.put(`/section-templates/${id}`, template);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -147,7 +147,7 @@ export const sectionTemplatesApi = {
 
     deleteSectionTemplate: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/admin/section-templates/${id}`);
+            await api.delete(`/section-templates/${id}`);
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 if (error.response) {
@@ -160,7 +160,7 @@ export const sectionTemplatesApi = {
 
     getTemplateCount: async (): Promise<number> => {
         try {
-            const response = await api.get('/admin/section-templates/count');
+            const response = await api.get('/section-templates/count');
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {

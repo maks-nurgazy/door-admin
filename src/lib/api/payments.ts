@@ -61,7 +61,7 @@ export const paymentsApi = {
             }
 
             const queryString = searchQueries.join('&');
-            const url = `/admin/payments${queryString ? `?${queryString}` : ''}`;
+            const url = `/payments${queryString ? `?${queryString}` : ''}`;
 
             const response = await api.get(url);
             return response.data;
@@ -79,7 +79,7 @@ export const paymentsApi = {
 
     createPayment: async (payment: CreatePaymentDto): Promise<Payment> => {
         try {
-            const response = await api.post('/admin/payments', payment);
+            const response = await api.post('/payments', payment);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -93,7 +93,7 @@ export const paymentsApi = {
 
     updatePaymentStatus: async (id: number, status: string): Promise<Payment> => {
         try {
-            const response = await api.post(`/admin/payments/${id}/${status}`, {status});
+            const response = await api.post(`/payments/${id}/${status}`, {status});
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {

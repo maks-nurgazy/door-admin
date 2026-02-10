@@ -184,7 +184,7 @@ export const questionsApi = {
             }
 
             const queryString = searchQueries.join('&');
-            const url = `/admin/questions${queryString ? `?${queryString}` : ''}`;
+            const url = `/questions${queryString ? `?${queryString}` : ''}`;
             const response = await api.get(url);
             return response.data;
         } catch (error) {
@@ -201,7 +201,7 @@ export const questionsApi = {
 
     getQuestionById: async (id: number): Promise<QuestionDetail> => {
         try {
-            const response = await api.get(`/admin/questions/${id}`);
+            const response = await api.get(`/questions/${id}`);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -216,7 +216,7 @@ export const questionsApi = {
     createQuestion: async (question: CreateQuestionDto): Promise<Question> => {
         try {
             console.log(question);
-            const response = await api.post('/admin/questions', question);
+            const response = await api.post('/questions', question);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -230,7 +230,7 @@ export const questionsApi = {
 
     updateQuestion: async (id: number, question: CreateQuestionDto): Promise<Question> => {
         try {
-            const response = await api.put(`/admin/questions/${id}`, question);
+            const response = await api.put(`/questions/${id}`, question);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -244,7 +244,7 @@ export const questionsApi = {
 
     deleteQuestion: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/admin/questions/${id}`);
+            await api.delete(`/questions/${id}`);
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 if (error.response) {

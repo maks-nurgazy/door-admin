@@ -129,7 +129,7 @@ export const testsApi = {
             }
 
             const queryString = searchQueries.join('&');
-            const url = `/admin/tests${queryString ? `?${queryString}` : ''}`;
+            const url = `/tests${queryString ? `?${queryString}` : ''}`;
 
             const response = await api.get(url);
             return response.data;
@@ -141,7 +141,7 @@ export const testsApi = {
 
     getTest: async (id: number): Promise<TestPackageDto> => {
         try {
-            const response = await api.get(`/admin/tests/${id}`);
+            const response = await api.get(`/tests/${id}`);
             return response.data;
         } catch (error) {
             console.error('Failed to fetch test:', error);
@@ -151,7 +151,7 @@ export const testsApi = {
 
     createTest: async (test: CreateTestPackageRequest): Promise<TestPackageDto> => {
         try {
-            const response = await api.post('/admin/tests', test);
+            const response = await api.post('/tests', test);
             return response.data;
         } catch (error) {
             console.error('Failed to create test:', error);
@@ -161,7 +161,7 @@ export const testsApi = {
 
     updateTest: async (id: number, test: UpdateTestPackageRequest): Promise<TestPackageDto> => {
         try {
-            const response = await api.put(`/admin/tests/${id}`, test);
+            const response = await api.put(`/tests/${id}`, test);
             return response.data;
         } catch (error) {
             console.error('Failed to update test:', error);
@@ -171,7 +171,7 @@ export const testsApi = {
 
     deleteTest: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/admin/tests/${id}`);
+            await api.delete(`/tests/${id}`);
         } catch (error) {
             console.error('Failed to delete test:', error);
             throw error;
@@ -180,7 +180,7 @@ export const testsApi = {
 
     getTestSections: async (testId: number): Promise<TestSection[]> => {
         try {
-            const response = await api.get(`/admin/tests/${testId}/sections`);
+            const response = await api.get(`/tests/${testId}/sections`);
             return response.data;
         } catch (error) {
             console.error('Failed to get test sections:', error);
@@ -190,7 +190,7 @@ export const testsApi = {
 
     getTestSectionQuestions: async (testId: number, sectionTemplateId: number): Promise<TestSectionQuestion[]> => {
         try {
-            const response = await api.get(`/admin/tests/${testId}/sections/${sectionTemplateId}/questions`);
+            const response = await api.get(`/tests/${testId}/sections/${sectionTemplateId}/questions`);
             return response.data;
         } catch (error) {
             console.error('Failed to get test section questions:', error);
@@ -205,7 +205,7 @@ export const testsApi = {
         action: 'assign' | 'remove' = 'assign'
     ): Promise<void> => {
         try {
-            await api.put(`/admin/tests/${testId}/sections/${sectionTemplateId}/questions?action=${action}`, questionIds);
+            await api.put(`/tests/${testId}/sections/${sectionTemplateId}/questions?action=${action}`, questionIds);
         } catch (error) {
             console.error('Failed to update test section questions:', error);
             throw error;

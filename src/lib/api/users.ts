@@ -61,7 +61,7 @@ export const usersApi = {
 
     updateUser: async (id: number, userData: Partial<User>): Promise<User> => {
         try {
-            const response = await api.put(`/admin/users/${id}`, userData);
+            const response = await api.put(`/users/${id}`, userData);
             return response.data;
         } catch (error) {
             console.error('Failed to update user:', error);
@@ -71,7 +71,7 @@ export const usersApi = {
 
     updateUserStatus: async (id: number, status: string): Promise<User> => {
         try {
-            const response = await api.put(`/admin/users/${id}`, { status });
+            const response = await api.put(`/users/${id}`, { status });
             return response.data;
         } catch (error) {
             console.error('Failed to update user status:', error);

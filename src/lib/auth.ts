@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    const apiUrl = `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/api/admin/auth/login`;
+                    const apiUrl = `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/auth/login`;
                     console.log("Login API URL:", apiUrl);
 
                     // POST /api/admin/auth/login - Admin authentication endpoint
@@ -167,7 +167,7 @@ async function refreshAccessToken(token: any) {
     try {
         // POST /api/admin/auth/refresh-token - Admin token refresh endpoint
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/api/admin/auth/refresh-token`,
+            `${process.env.NEXT_PUBLIC_API_SERVER_BASE_URL}/auth/refresh-token`,
             {
                 headers: {"Content-Type": "application/json"},
                 method: "POST",

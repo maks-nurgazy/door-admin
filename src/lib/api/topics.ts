@@ -48,7 +48,7 @@ export const topicsApi = {
             }
 
             const queryString = searchQueries.join('&');
-            const url = `/admin/topics${queryString ? `?${queryString}` : ''}`;
+            const url = `/topics${queryString ? `?${queryString}` : ''}`;
 
             const response = await api.get(url);
             return response.data;
@@ -66,7 +66,7 @@ export const topicsApi = {
 
     getAllTopics: async (): Promise<TopicShortDto[]> => {
         try {
-            const url = `/admin/topics/all`;
+            const url = `/topics/all`;
 
             const response = await api.get(url);
             return response.data;
@@ -84,7 +84,7 @@ export const topicsApi = {
 
     createTopic: async (topic: CreateTopicDto): Promise<Topic> => {
         try {
-            const response = await api.post('/admin/topics', topic);
+            const response = await api.post('/topics', topic);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -98,7 +98,7 @@ export const topicsApi = {
 
     updateTopic: async (id: number, topic: CreateTopicDto): Promise<Topic> => {
         try {
-            const response = await api.put(`/admin/topics/${id}`, topic);
+            const response = await api.put(`/topics/${id}`, topic);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -112,7 +112,7 @@ export const topicsApi = {
 
     deleteTopic: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/admin/topics/${id}`);
+            await api.delete(`/topics/${id}`);
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 if (error.response) {

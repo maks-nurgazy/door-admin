@@ -20,7 +20,7 @@ export const fileUploadApi = {
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await axios.post(`${FILE_SERVICE_URL}/api/files/upload`, formData, {
+            const response = await axios.post(`${FILE_SERVICE_URL}/files/upload`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

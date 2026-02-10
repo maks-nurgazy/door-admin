@@ -39,10 +39,12 @@ export interface UpdateReadingPassageDto {
 
 export interface ReadingPassagesResponse {
     content: ReadingPassageListItem[];
-    currentPage: number;
-    pageSize: number;
+    page: number;
+    size: number;
     totalElements: number;
     totalPages: number;
+    first: boolean;
+    last: boolean;
 }
 
 export interface ReadingPassageFilters {
@@ -69,7 +71,7 @@ export const readingPassagesApi = {
             }
 
             const queryString = searchQueries.join('&');
-            const url = `/admin/reading-passages${queryString ? `?${queryString}` : ''}`;
+            const url = `/reading-passages${queryString ? `?${queryString}` : ''}`;
             const response = await api.get(url);
             return response.data;
         } catch (error) {
@@ -86,7 +88,7 @@ export const readingPassagesApi = {
 
     getAllPassagesForDropdown: async (): Promise<ReadingPassageListItem[]> => {
         try {
-            const response = await api.get('/admin/reading-passages/all');
+            const response = await api.get('/reading-passages/all');
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -100,7 +102,7 @@ export const readingPassagesApi = {
 
     getPassageById: async (id: number): Promise<ReadingPassage> => {
         try {
-            const response = await api.get(`/admin/reading-passages/${id}`);
+            const response = await api.get(`/reading-passages/${id}`);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -114,7 +116,7 @@ export const readingPassagesApi = {
 
     createPassage: async (passage: CreateReadingPassageDto): Promise<ReadingPassage> => {
         try {
-            const response = await api.post('/admin/reading-passages', passage);
+            const response = await api.post('/reading-passages', passage);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -128,7 +130,7 @@ export const readingPassagesApi = {
 
     updatePassage: async (id: number, passage: UpdateReadingPassageDto): Promise<ReadingPassage> => {
         try {
-            const response = await api.put(`/admin/reading-passages/${id}`, passage);
+            const response = await api.put(`/reading-passages/${id}`, passage);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -142,7 +144,7 @@ export const readingPassagesApi = {
 
     deletePassage: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/admin/reading-passages/${id}`);
+            await api.delete(`/reading-passages/${id}`);
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 if (error.response) {

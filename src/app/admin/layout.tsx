@@ -13,7 +13,8 @@ import {
     User,
     Layers,
     GraduationCap,
-    Shield
+    Shield,
+    ScrollText
 } from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
@@ -38,6 +39,7 @@ const navigation = [
     {name: "Payments", href: "/admin/payments", icon: CreditCard},
     {name: "Questions", href: "/admin/questions", icon: HelpCircle},
     {name: "Topics", href: "/admin/topics", icon: BookOpen},
+    {name: "Reading Passages", href: "/admin/reading-passages", icon: ScrollText},
     {name: "User Test Access", href: "/admin/user-test-access", icon: Shield},
 ];
 

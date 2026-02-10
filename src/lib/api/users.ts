@@ -1,81 +1,65 @@
-import {api} from "@/lib/axios";
+import { api } from "@/lib/axios";
+import axios from "axios";
+
+export type UserStatus = 'PENDING_PAYMENT' | 'PAYMENT_SUBMITTED' | 'ACTIVE' | 'BANNED';
 
 export interface User {
     id: number;
-    phone: string;
+    phone: string | null;
     email: string | null;
+    username: string;
     firstName: string;
     lastName: string;
-    username: string;
-    status: string;
-    paymentStatus: string;
+    status: UserStatus;
     createdAt: string;
 }
 
 export interface UsersResponse {
-    data: User[];
-    currentPage: number;
-    pageSize: number;
-    totalItems: number;
+    content: User[];
+    page: number;
+    size: number;
+    totalElements: number;
     totalPages: number;
+    first: boolean;
+    last: boolean;
 }
 
 export interface UserFilters {
-    name?: string;
-    status?: 'PENDING' | 'APPROVED' | 'BANNED';
-    paymentStatus?: 'PAID' | 'UNPAID' | 'PENDING';
+    search?: string;
+    status?: UserStatus;
     page?: number;
+    size?: number;
 }
 
 export const usersApi = {
     getUsers: async (filters?: UserFilters): Promise<UsersResponse> => {
         try {
-            const searchParams = new URLSearchParams();
-
-            if (filters?.page !== undefined) {
-                searchParams.append('page', filters.page.toString());
-            }
-
-            if (filters?.name) {
-                searchParams.append('name', filters.name);
-            }
-
-            if (filters?.status) {
-                searchParams.append('status', filters.status);
-            }
-
-            if (filters?.paymentStatus) {
-                searchParams.append('paymentStatus', filters.paymentStatus);
-            }
-
-            const queryString = searchParams.toString();
-            const url = `/admin/users${queryString ? `?${queryString}` : ''}`;
-
-            const response = await api.get(url);
+            const params = new URLSearchParams();
+            if (filters?.page !== undefined) params.set('page', String(filters.page));
+            if (filters?.size !== undefined) params.set('size', String(filters.size));
+            if (filters?.search) params.set('search', filters.search);
+            if (filters?.status) params.set('status', filters.status);
+            const qs = params.toString();
+            const response = await api.get(`/users${qs ? `?${qs}` : ''}`);
             return response.data;
         } catch (error) {
-            console.error('Failed to fetch users:', error);
-            throw error;
+            if (axios.isAxiosError(error)) {
+                if (error.response) throw new Error(`Server error: ${error.response.data?.message || error.message}`);
+                if (error.request) throw new Error('No response received from server. Please check your connection.');
+            }
+            throw new Error('Failed to fetch users');
         }
     },
 
-    updateUser: async (id: number, userData: Partial<User>): Promise<User> => {
+    updateUserStatus: async (id: number, status: UserStatus): Promise<User> => {
         try {
-            const response = await api.put(`/users/${id}`, userData);
+            const response = await api.put(`/users/${id}/status?status=${status}`);
             return response.data;
         } catch (error) {
-            console.error('Failed to update user:', error);
-            throw error;
+            if (axios.isAxiosError(error)) {
+                if (error.response) throw new Error(`Failed to update user status: ${error.response.data?.message || error.message}`);
+            }
+            throw new Error('Failed to update user status');
         }
     },
-
-    updateUserStatus: async (id: number, status: string): Promise<User> => {
-        try {
-            const response = await api.put(`/users/${id}`, { status });
-            return response.data;
-        } catch (error) {
-            console.error('Failed to update user status:', error);
-            throw error;
-        }
-    }
 };

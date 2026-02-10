@@ -183,62 +183,51 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                 value={test.id.toString()}
                                 className="border rounded-lg px-4"
                             >
-                                <AccordionTrigger className="hover:no-underline">
-                                    <div className="flex items-center justify-between w-full pr-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-left">
-                                                <h3 className="font-semibold text-lg">{test.title}</h3>
-                                                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar className="h-3 w-3" />
-                                                        {formatDateRange(test.startDate, test.endDate)}
+                                <div className="flex items-center justify-between">
+                                    <AccordionTrigger className="hover:no-underline flex-1">
+                                        <div className="text-left">
+                                            <h3 className="font-semibold text-lg">{test.title}</h3>
+                                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                                <span className="flex items-center gap-1">
+                                                    <Calendar className="h-3 w-3" />
+                                                    <span suppressHydrationWarning>{formatDateRange(test.startDate, test.endDate)}</span>
+                                                </span>
+                                                {test.descriptionPreview && (
+                                                    <span className="truncate max-w-[200px]">
+                                                        {test.descriptionPreview}
                                                     </span>
-                                                    {test.descriptionPreview && (
-                                                        <span className="truncate max-w-[200px]">
-                                                            {test.descriptionPreview}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                            {getTestTypeBadge(test.testType)}
-                                            {getStatusBadge(test.status, test.isActive)}
-                                            <div className="flex gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleView(test);
-                                                    }}
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEdit(test);
-                                                    }}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(test.id);
-                                                    }}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                                    </AccordionTrigger>
+                                    <div className="flex items-center gap-4 pl-4">
+                                        {getTestTypeBadge(test.testType)}
+                                        {getStatusBadge(test.status, test.isActive)}
+                                        <div className="flex gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleView(test)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleEdit(test)}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleDelete(test.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
                                         </div>
                                     </div>
-                                </AccordionTrigger>
+                                </div>
                                 <AccordionContent>
                                     <div className="pl-4 border-l-2 border-muted ml-2">
                                         <h4 className="font-medium mb-3 text-sm text-muted-foreground">Sections</h4>
@@ -348,13 +337,13 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                 </div>
                                 <div>
                                     <Label className="text-sm text-muted-foreground">Date Range</Label>
-                                    <p className="text-lg font-medium">
+                                    <p className="text-lg font-medium" suppressHydrationWarning>
                                         {formatDateRange(selectedTest.startDate, selectedTest.endDate)}
                                     </p>
                                 </div>
                                 <div>
                                     <Label className="text-sm text-muted-foreground">Created At</Label>
-                                    <p className="text-lg font-medium">
+                                    <p className="text-lg font-medium" suppressHydrationWarning>
                                         {format(new Date(selectedTest.createdAt), "MMM dd, yyyy HH:mm")}
                                     </p>
                                 </div>

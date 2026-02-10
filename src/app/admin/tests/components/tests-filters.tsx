@@ -78,7 +78,7 @@ export function TestsFilters() {
                 className="max-w-sm"
             />
             <Select
-                defaultValue={searchParams.get("status") || "all"}
+                value={searchParams.get("status") || "all"}
                 onValueChange={handleStatusChange}
             >
                 <SelectTrigger className="w-[150px]">
@@ -91,7 +91,7 @@ export function TestsFilters() {
                 </SelectContent>
             </Select>
             <Select
-                defaultValue={searchParams.get("testType") || "all"}
+                value={searchParams.get("testType") || "all"}
                 onValueChange={handleTestTypeChange}
             >
                 <SelectTrigger className="w-[150px]">

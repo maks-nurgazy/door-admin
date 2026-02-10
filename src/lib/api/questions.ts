@@ -1,242 +1,148 @@
 import axios from 'axios';
-import {api} from "@/lib/axios";
+import { api } from "@/lib/axios";
+import { PageResponse } from "@/lib/api/tests";
 
+// Matches backend QuestionType enum exactly
+export type QuestionType = 'ANALOGY' | 'ALGEBRAIC_EXPRESSION' | 'MATH_COMPARISON' | 'SENTENCE_COMPLETION' | 'READING_COMPREHENSION';
+
+// Matches backend DisplayType enum
+export type DisplayType = 'TEXT' | 'LATEX' | 'IMAGE';
+
+// Matches backend TextContent
+export interface TextContent {
+    displayType: DisplayType;
+    value: string;
+}
+
+// Matches backend Option
 export interface QuestionOption {
     id: number;
-    text?: string;
-    textLatex?: string;
-    firstWord?: string;
-    secondWord?: string;
-    relationship?: string;
+    label: string;
+    value: string;
+    displayType: DisplayType;
+    isCorrect: boolean;
 }
 
-export interface QuestionTopic {
+// Matches backend ComparisonColumn
+export interface ComparisonColumn {
+    label: string;
+    value: string;
+    displayType: DisplayType;
+}
+
+// Matches backend ComparisonTable (used only by MATH_COMPARISON)
+export interface ComparisonTable {
+    columnA: ComparisonColumn;
+    columnB: ComparisonColumn;
+}
+
+// Matches backend QuestionContent (polymorphic - all types share these fields)
+export interface QuestionContent {
+    questionType: QuestionType;      // Jackson discriminator
+    questionText: TextContent;
+    options: QuestionOption[];
+    correctOptionId: number;
+    comparisonTable?: ComparisonTable; // only for MATH_COMPARISON
+}
+
+// Matches backend QuestionListDto (list view)
+export interface QuestionListDto {
     id: number;
-    title: string;
-}
-
-// Content interfaces for different question types
-export interface AnalogyContent {
-    examplePair: {
-        id: number;
-        firstWord: string;
-        secondWord: string;
-        relationship?: string;
-    };
-    correctAnswer: number;
-    options: QuestionOption[];
-    relationshipType: string;
-}
-
-export interface ComparisonContent {
-    columnALatex: string;
-    columnBLatex: string;
-    correctAnswer: number;
-    infoText?: string;
-    imageUrl?: string;
-    options: QuestionOption[];
-}
-
-export interface MathCalculationContent {
-    descriptionLatex: string;
-    correctAnswer: number;
-    options: QuestionOption[];
-}
-
-export interface SentenceCompletionContent {
-    sentence: string;
-    correctAnswer: number;
-    options: QuestionOption[];
-}
-
-export interface ReadingComprehensionContent {
-    questionText: string;
-    correctAnswer: number;
-    options: QuestionOption[];
-}
-
-// Union type for all question content types
-export type QuestionContentType =
-    | AnalogyContent
-    | ComparisonContent
-    | MathCalculationContent
-    | SentenceCompletionContent
-    | ReadingComprehensionContent;
-
-export interface QuestionTopic {
-    id: number;
-    title: string;
-}
-
-// All supported question types
-export type QuestionTypeEnum = 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION' | 'READING_COMPREHENSION';
-
-export interface Question {
-    id: number;
-    questionText: string;
-    type: QuestionTypeEnum;
-    points: number;
-    timeLimitSeconds: number;
-    topics: QuestionTopic[];
-    topicCount: number;
+    type: QuestionType;
+    questionPreview: string | null;
+    topics: { id: number; title: string }[];
+    sectionName: string | null;
+    hasPassage: boolean;
     createdAt: string;
     updatedAt: string;
+}
 
-    // These fields are used for form operations
-    topicIds?: number[];
+// Matches backend QuestionResponseDto (detail view)
+export interface QuestionResponseDto {
+    id: number;
+    type: QuestionType;
+    content: QuestionContent;
+    explanation: string | null;
+    passage: { id: number; title: string } | null;
+    topics: { id: number; title: string }[];
+    section: { id: number; name: string } | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Matches backend CreateQuestionRequest / UpdateQuestionRequest
+export interface CreateQuestionRequest {
+    type: QuestionType;
+    content: QuestionContent;
     explanation?: string;
-    content?: QuestionContentType;
+    passageId?: number;
+    topicIds: number[];
 }
 
-// Full question details returned from GET /admin/questions/{id}
-export interface QuestionDetail {
-    id: number;
-    type: QuestionTypeEnum;
-    questionText: string;
-    content: string; // JSON string from backend
-    points: number;
-    timeLimitSeconds: number;
-    explanation: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface QuestionsResponse {
-    data: Question[];
-    currentPage: number;
-    pageSize: number;
-    totalItems: number;
-    totalPages: number;
-}
+export type QuestionsResponse = PageResponse<QuestionListDto>;
 
 export interface QuestionFilters {
     search?: string;
+    topicId?: number;
+    questionType?: QuestionType;
     page?: number;
     size?: number;
-    topicId?: number;
-    testId?: number;
-    sectionId?: number;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-}
-
-// Internal form DTO (used within components)
-export interface QuestionFormDto {
-    questionText: string;
-    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION';
-    topicIds: number[];
-    points: number;
-    timeLimitSeconds: number;
-    explanation: string;
-    content: AnalogyContent | ComparisonContent | MathCalculationContent | SentenceCompletionContent;
-}
-
-// API request DTO (sent to backend)
-export interface CreateQuestionDto {
-    questionText: string;
-    type: 'ANALOGY' | 'COMPARISON' | 'MATH_CALCULATION' | 'SENTENCE_COMPLETION' | 'READING_COMPREHENSION';
-    topicIds: number[];
-    points: number;
-    timeLimitSeconds: number;
-    explanation: string;
-    content: string; // JSON string - matches backend expectation
-    correctAnswer: number; // Separate field as expected by backend
-    testId?: number; // Optional: assign to test on creation
-    sectionTemplateId?: number; // Optional: assign to section on creation
-    readingPassageId?: number; // Optional: for READING_COMPREHENSION questions
 }
 
 export const questionsApi = {
     getQuestions: async (filters?: QuestionFilters): Promise<QuestionsResponse> => {
         try {
-            const searchQueries: string[] = [];
+            const params = new URLSearchParams();
 
-            if (filters?.page !== undefined) {
-                searchQueries.push(`page=${filters.page}`);
-            }
+            if (filters?.page !== undefined) params.set('page', String(filters.page));
+            if (filters?.size !== undefined) params.set('size', String(filters.size));
+            if (filters?.search) params.set('search', filters.search);
+            if (filters?.topicId) params.set('topicId', String(filters.topicId));
+            if (filters?.questionType) params.set('questionType', filters.questionType);
 
-            if (filters?.size !== undefined) {
-                searchQueries.push(`size=${filters.size}`);
-            }
-
-            if (filters?.search) {
-                searchQueries.push(`search=text:like:${filters.search}`);
-            }
-
-            if (filters?.topicId) {
-                searchQueries.push(`topicId=${filters.topicId}`);
-            }
-
-            if (filters?.testId) {
-                searchQueries.push(`testId=${filters.testId}`);
-            }
-
-            if (filters?.sectionId) {
-                searchQueries.push(`sectionId=${filters.sectionId}`);
-            }
-
-            if (filters?.sortBy) {
-                searchQueries.push(`sortBy=${filters.sortBy}`);
-            }
-
-            if (filters?.sortOrder) {
-                searchQueries.push(`sortOrder=${filters.sortOrder}`);
-            }
-
-            const queryString = searchQueries.join('&');
-            const url = `/questions${queryString ? `?${queryString}` : ''}`;
-            const response = await api.get(url);
+            const qs = params.toString();
+            const response = await api.get(`/questions${qs ? `?${qs}` : ''}`);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Server error: ${error.response.data?.message || error.message}`);
-                } else if (error.request) {
-                    throw new Error('No response received from server. Please check your connection.');
-                }
+                if (error.response) throw new Error(`Server error: ${error.response.data?.message || error.message}`);
+                if (error.request) throw new Error('No response received from server. Please check your connection.');
             }
-            throw new Error('Failed to fetch questions data');
+            throw new Error('Failed to fetch questions');
         }
     },
 
-    getQuestionById: async (id: number): Promise<QuestionDetail> => {
+    getQuestionById: async (id: number): Promise<QuestionResponseDto> => {
         try {
             const response = await api.get(`/questions/${id}`);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to fetch question: ${error.response.data?.message || error.message}`);
-                }
+                if (error.response) throw new Error(`Failed to fetch question: ${error.response.data?.message || error.message}`);
             }
             throw new Error('Failed to fetch question details');
         }
     },
 
-    createQuestion: async (question: CreateQuestionDto): Promise<Question> => {
+    createQuestion: async (question: CreateQuestionRequest): Promise<QuestionResponseDto> => {
         try {
-            console.log(question);
             const response = await api.post('/questions', question);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to create question: ${error.response.data?.message || error.message}`);
-                }
+                if (error.response) throw new Error(`Failed to create question: ${error.response.data?.message || error.message}`);
             }
             throw new Error('Failed to create question');
         }
     },
 
-    updateQuestion: async (id: number, question: CreateQuestionDto): Promise<Question> => {
+    updateQuestion: async (id: number, question: CreateQuestionRequest): Promise<QuestionResponseDto> => {
         try {
             const response = await api.put(`/questions/${id}`, question);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to update question: ${error.response.data?.message || error.message}`);
-                }
+                if (error.response) throw new Error(`Failed to update question: ${error.response.data?.message || error.message}`);
             }
             throw new Error('Failed to update question');
         }
@@ -247,11 +153,9 @@ export const questionsApi = {
             await api.delete(`/questions/${id}`);
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to delete question: ${error.response.data?.message || error.message}`);
-                }
+                if (error.response) throw new Error(`Failed to delete question: ${error.response.data?.message || error.message}`);
             }
             throw new Error('Failed to delete question');
         }
-    }
+    },
 };

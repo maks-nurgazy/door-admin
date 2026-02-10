@@ -3,28 +3,24 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { Combobox } from "@/components/ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, X } from "lucide-react";
+import { X } from "lucide-react";
+import { Topic } from "@/lib/api/topics";
+import { getQuestionTypes } from "@/lib/question-types";
 
 interface QuestionsFiltersProps {
-    sections: { id: number; title: string; }[];
-    topics: { id: number; title: string; }[];
-    tests: { id: number; title: string; }[];
+    topics: Topic[];
 }
 
-export function QuestionsFilters({ sections, topics, tests }: QuestionsFiltersProps) {
+export function QuestionsFilters({ topics }: QuestionsFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [, startTransition] = useTransition();
 
     const [search, setSearch] = useState(searchParams.get("search") || "");
-    const [section, setSection] = useState(searchParams.get("section") || "all");
     const [topic, setTopic] = useState(searchParams.get("topic") || "all");
-    const [test, setTest] = useState(searchParams.get("test") || "all");
-    const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "createdAt");
-    const [sortOrder, setSortOrder] = useState(searchParams.get("sortOrder") || "desc");
+    const [questionType, setQuestionType] = useState(searchParams.get("questionType") || "all");
 
     const updateFilters = useCallback(
         (params: Record<string, string | null>) => {
@@ -32,16 +28,13 @@ export function QuestionsFilters({ sections, topics, tests }: QuestionsFiltersPr
             let somethingChanged = false;
 
             for (const [key, value] of Object.entries(params)) {
-                const oldValue = newSearchParams.get(key) || "all";
-                const normalized = (oldValue === "all") ? null : oldValue;
-
                 if (value === null || value === "all") {
-                    if (normalized !== null) {
+                    if (newSearchParams.has(key)) {
                         newSearchParams.delete(key);
                         somethingChanged = true;
                     }
                 } else {
-                    if (value !== normalized) {
+                    if (newSearchParams.get(key) !== value) {
                         newSearchParams.set(key, value);
                         somethingChanged = true;
                     }
@@ -49,7 +42,7 @@ export function QuestionsFilters({ sections, topics, tests }: QuestionsFiltersPr
             }
 
             if (somethingChanged) {
-                if (Object.keys(params).some((key) => key !== "page")) {
+                if (!Object.keys(params).includes("page")) {
                     newSearchParams.delete("page");
                 }
                 startTransition(() => {
@@ -62,82 +55,19 @@ export function QuestionsFilters({ sections, topics, tests }: QuestionsFiltersPr
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
-            if (search) {
-                updateFilters({ search });
-            } else {
-                updateFilters({ search: null });
-            }
+            updateFilters({ search: search || null });
         }, 300);
-
         return () => clearTimeout(timeoutId);
     }, [search, updateFilters]);
 
-    const sectionsItems = [
-        { value: "all", label: "All Sections" },
-        ...sections.map(section => ({
-            value: section.id.toString(),
-            label: section.title
-        }))
-    ];
-
-    const topicsItems = [
-        { value: "all", label: "All Topics" },
-        ...topics.map(topic => ({
-            value: topic.id.toString(),
-            label: topic.title
-        }))
-    ];
-
-    const testsItems = [
-        { value: "all", label: "All Tests" },
-        ...tests.map(test => ({
-            value: test.id.toString(),
-            label: test.title
-        }))
-    ];
-
-    const sortOptions = [
-        { value: "createdAt", label: "Created Date" },
-        { value: "id", label: "ID" },
-        { value: "text", label: "Question Text" },
-    ];
-
-    const handleSortChange = (newSortBy: string) => {
-        setSortBy(newSortBy);
-        updateFilters({ sortBy: newSortBy });
-    };
-
-    const handleSortOrderChange = () => {
-        const newSortOrder = sortOrder === "asc" ? "desc" : "asc";
-        setSortOrder(newSortOrder);
-        updateFilters({ sortOrder: newSortOrder });
-    };
-
-    const getSortIcon = () => {
-        if (sortOrder === "asc") {
-            return <ArrowUp className="h-4 w-4" />;
-        }
-        return <ArrowDown className="h-4 w-4" />;
-    };
-
     const clearAllFilters = () => {
         setSearch("");
-        setSection("all");
         setTopic("all");
-        setTest("all");
-        setSortBy("createdAt");
-        setSortOrder("desc");
-        updateFilters({
-            search: null,
-            section: null,
-            topic: null,
-            test: null,
-            sortBy: null,
-            sortOrder: null
-        });
+        setQuestionType("all");
+        updateFilters({ search: null, topic: null, questionType: null });
     };
 
-    const hasActiveFilters = search || section !== "all" || topic !== "all" || test !== "all" || sortBy !== "createdAt" || sortOrder !== "desc";
+    const hasActiveFilters = search || topic !== "all" || questionType !== "all";
 
     return (
         <div className="flex gap-4 flex-wrap items-center">
@@ -147,56 +77,44 @@ export function QuestionsFilters({ sections, topics, tests }: QuestionsFiltersPr
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"
             />
-            <Combobox
-                items={sectionsItems}
-                value={section}
-                onValueChange={(value) => {
-                    setSection(value);
-                    updateFilters({ section: value });
-                }}
-                placeholder="Filter by section"
-                className="w-[200px]"
-            />
-            <Combobox
-                items={topicsItems}
+            <Select
                 value={topic}
                 onValueChange={(value) => {
                     setTopic(value);
                     updateFilters({ topic: value });
                 }}
-                placeholder="Filter by topic"
-                className="w-[200px]"
-            />
-            <Combobox
-                items={testsItems}
-                value={test}
-                onValueChange={(value) => {
-                    setTest(value);
-                    updateFilters({ test: value });
-                }}
-                placeholder="Filter by test"
-                className="w-[200px]"
-            />
-            <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Sort by" />
+            >
+                <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by topic" />
                 </SelectTrigger>
                 <SelectContent>
-                    {sortOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                    <SelectItem value="all">All Topics</SelectItem>
+                    {topics.map((t) => (
+                        <SelectItem key={t.id} value={t.id.toString()}>
+                            {t.title}
                         </SelectItem>
                     ))}
                 </SelectContent>
             </Select>
-            <Button
-                variant="outline"
-                size="icon"
-                onClick={handleSortOrderChange}
-                className="w-10"
+            <Select
+                value={questionType}
+                onValueChange={(value) => {
+                    setQuestionType(value);
+                    updateFilters({ questionType: value });
+                }}
             >
-                {getSortIcon()}
-            </Button>
+                <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {getQuestionTypes().map((config) => (
+                        <SelectItem key={config.type} value={config.type}>
+                            {config.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
             {hasActiveFilters && (
                 <Button
                     variant="outline"

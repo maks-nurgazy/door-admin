@@ -21,10 +21,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Question, AnalogyContent, ComparisonContent, MathCalculationContent, SentenceCompletionContent } from "@/lib/api/questions";
-import { TopicShortDto } from "@/lib/api/topics";
-import { Test } from "@/lib/api/tests";
-import { SectionTemplate } from "@/lib/api/section-templates";
+import {
+    QuestionResponseDto,
+    CreateQuestionRequest,
+    QuestionContent,
+    QuestionType,
+} from "@/lib/api/questions";
+import { Topic } from "@/lib/api/topics";
 import { TopicSelector } from "./topic-selector";
 import { AnalogyForm } from "./analogy-form";
 import { ComparisonForm } from "./comparison-form";
@@ -34,78 +37,51 @@ import { ReadingComprehensionForm, ReadingComprehensionFormData } from "./readin
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getQuestionTypes } from "@/lib/question-types";
-import { testsApi, TestSection } from "@/lib/api/tests";
 import { readingPassagesApi, ReadingPassageListItem } from "@/lib/api/reading-passages";
 
 const questionSchema = z.object({
     questionText: z.string().min(3, "Question text must be at least 3 characters"),
-    type: z.enum(["ANALOGY", "COMPARISON", "MATH_CALCULATION", "SENTENCE_COMPLETION", "READING_COMPREHENSION"]),
+    type: z.enum(["ANALOGY", "ALGEBRAIC_EXPRESSION", "MATH_COMPARISON", "SENTENCE_COMPLETION", "READING_COMPREHENSION"]),
     topicIds: z.array(z.number()).min(1, "At least one topic is required"),
-    points: z.coerce.number().min(1, "Points must be at least 1"),
-    timeLimitSeconds: z.coerce.number().min(1, "Time limit must be at least 1 second"),
-    explanation: z.string(),
-    content: z.any(), // Will be validated by specific form components
-    testId: z.number().optional(),
-    sectionTemplateId: z.number().optional(),
-    readingPassageId: z.number().optional(), // For READING_COMPREHENSION questions
+    explanation: z.string().optional(),
+    passageId: z.number().optional(),
 });
 
 export type QuestionFormValues = z.infer<typeof questionSchema>;
 
 interface QuestionFormProps {
     mode?: 'create' | 'edit';
-    question?: Question;
-    topics: TopicShortDto[];
-    tests?: Test[];
-    onSubmit: (data: QuestionFormValues) => Promise<void>;
+    question?: QuestionResponseDto;
+    topics: Topic[];
+    onSubmit: (data: CreateQuestionRequest) => Promise<void>;
     onCancel: () => void;
 }
 
-export function QuestionForm({ mode = 'create', question, topics, tests = [], onSubmit, onCancel }: QuestionFormProps) {
-    // Extract topic IDs from either topicIds array or topics array
-    const getTopicIds = (q?: Question): number[] => {
-        if (!q) return [];
-        if (q.topicIds && q.topicIds.length > 0) return q.topicIds;
-        if (q.topics && q.topics.length > 0) return q.topics.map(t => t.id);
-        return [];
+export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCancel }: QuestionFormProps) {
+    const getTopicIds = (q?: QuestionResponseDto): number[] => {
+        if (!q?.topics) return [];
+        return q.topics.map(t => t.id);
     };
 
     const [selectedTopics, setSelectedTopics] = useState<number[]>(getTopicIds(question));
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [content, setContent] = useState<any>(question?.content);
-    const [selectedTestId, setSelectedTestId] = useState<number | undefined>(undefined);
-    const [sections, setSections] = useState<TestSection[]>([]);
-    const [selectedSectionId, setSelectedSectionId] = useState<number | undefined>(undefined);
-    const [loadingSections, setLoadingSections] = useState(false);
+    // Content built by the sub-form (options, correctOptionId, type-specific fields)
+    const [subFormContent, setSubFormContent] = useState<any>(
+        question?.content ? {
+            options: question.content.options,
+            correctOptionId: question.content.correctOptionId,
+            comparisonTable: (question.content as any).comparisonTable,
+        } : null
+    );
     const [passages, setPassages] = useState<ReadingPassageListItem[]>([]);
     const [loadingPassages, setLoadingPassages] = useState(false);
 
-    // Load sections when test is selected
-    useEffect(() => {
-        if (selectedTestId) {
-            setLoadingSections(true);
-            testsApi.getTestSections(selectedTestId)
-                .then(setSections)
-                .catch(console.error)
-                .finally(() => setLoadingSections(false));
-        } else {
-            setSections([]);
-            setSelectedSectionId(undefined);
-        }
-    }, [selectedTestId]);
-
-    // Load all reading passages on mount
     useEffect(() => {
         setLoadingPassages(true);
         readingPassagesApi.getAllPassagesForDropdown()
             .then(setPassages)
             .catch((error) => {
                 console.error('Failed to load reading passages:', error);
-                toast({
-                    title: "Error",
-                    description: "Failed to load reading passages",
-                    variant: "destructive",
-                });
             })
             .finally(() => setLoadingPassages(false));
     }, []);
@@ -113,109 +89,68 @@ export function QuestionForm({ mode = 'create', question, topics, tests = [], on
     const form = useForm<QuestionFormValues>({
         resolver: zodResolver(questionSchema),
         defaultValues: question ? {
-            questionText: question.questionText,
+            questionText: question.content?.questionText?.value ?? "",
             type: question.type,
             topicIds: getTopicIds(question),
-            points: question.points,
-            timeLimitSeconds: question.timeLimitSeconds,
-            explanation: question.explanation || "",
-            content: question.content,
-            testId: undefined,
-            sectionTemplateId: undefined,
+            explanation: question.explanation ?? "",
+            passageId: question.passage?.id,
         } : {
             questionText: "",
             type: "ANALOGY",
             topicIds: [],
-            points: 1,
-            timeLimitSeconds: 30,
             explanation: "",
-            content: null,
-            testId: undefined,
-            sectionTemplateId: undefined,
+            passageId: undefined,
         },
     });
 
     const handleSubmit = async (data: QuestionFormValues) => {
         setIsSubmitting(true);
         try {
-            console.log('=== Question Form Submission Debug ===');
-            console.log('Form data:', data);
-            console.log('Content state:', content);
-
-            // Validate that content exists
-            if (!content) {
-                const errorMsg = "Please fill in the question content fields";
-                console.error('Validation error:', errorMsg);
-                toast({
-                    title: "Validation Error",
-                    description: errorMsg,
-                    variant: "destructive",
-                });
-                throw new Error(errorMsg);
+            if (!subFormContent) {
+                toast({ title: "Validation Error", description: "Please fill in the question content fields", variant: "destructive" });
+                throw new Error("Content is required");
             }
 
-            if (!content.correctAnswer) {
-                const errorMsg = "Please select a correct answer";
-                console.error('Validation error:', errorMsg);
-                toast({
-                    title: "Validation Error",
-                    description: errorMsg,
-                    variant: "destructive",
-                });
-                throw new Error(errorMsg);
-            }
-
-            // Prepare data matching backend DTO structure
-            const submitData = {
-                ...data,
-                content: JSON.stringify(content), // Convert entire content to JSON string (includes correctAnswer)
-                correctAnswer: content.correctAnswer, // Also send as separate top-level field
-                testId: selectedTestId,
-                sectionTemplateId: selectedSectionId,
+            // Build the backend-compatible content object with the Jackson discriminator
+            const content: QuestionContent = {
+                questionType: data.type as QuestionType,
+                questionText: { displayType: 'TEXT', value: data.questionText },
+                options: subFormContent.options ?? [],
+                correctOptionId: subFormContent.correctOptionId ?? subFormContent.correctAnswer,
+                ...(data.type === 'MATH_COMPARISON' && subFormContent.comparisonTable
+                    ? { comparisonTable: subFormContent.comparisonTable }
+                    : {}),
             };
 
-            console.log('Prepared submit data:', submitData);
-            console.log('Content JSON string:', submitData.content);
+            const request: CreateQuestionRequest = {
+                type: data.type as QuestionType,
+                content,
+                explanation: data.explanation || undefined,
+                passageId: data.passageId,
+                topicIds: data.topicIds,
+            };
 
-            await onSubmit(submitData);
+            await onSubmit(request);
 
             toast({
                 title: "Success",
                 description: mode === 'edit' ? "Question updated successfully!" : "Question created successfully!",
             });
         } catch (error) {
-            console.error('=== Question Form Submission Error ===');
-            console.error('Error details:', error);
-
-            // Only show toast if we haven't already shown a validation toast
-            if (error instanceof Error && !error.message.includes('Please fill in') && !error.message.includes('Please select')) {
+            if (error instanceof Error && !error.message.includes('Content is required')) {
                 toast({
                     title: "Error",
-                    description: error instanceof Error ? error.message : "Failed to save question. Please try again.",
+                    description: error.message || "Failed to save question. Please try again.",
                     variant: "destructive",
                 });
             }
-
-            // Re-throw to prevent form from thinking submission succeeded
             throw error;
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleContentChange = (newContent: any) => {
-        // For READING_COMPREHENSION, extract readingPassageId separately
-        if (form.watch("type") === "READING_COMPREHENSION" && newContent.readingPassageId) {
-            form.setValue('readingPassageId', newContent.readingPassageId, { shouldValidate: true });
-            // Remove readingPassageId from content as it's stored separately
-            const { readingPassageId, ...contentWithoutPassageId } = newContent;
-            setContent(contentWithoutPassageId);
-            form.setValue('content', contentWithoutPassageId, { shouldValidate: true });
-        } else {
-            setContent(newContent);
-            form.setValue('content', newContent, { shouldValidate: true });
-        }
-    };
+    const questionType = form.watch("type");
 
     return (
         <Form {...form}>
@@ -244,8 +179,7 @@ export function QuestionForm({ mode = 'create', question, topics, tests = [], on
                                 value={field.value}
                                 onValueChange={(value) => {
                                     field.onChange(value);
-                                    // Reset content when type changes
-                                    setContent(null);
+                                    setSubFormContent(null);
                                 }}
                             >
                                 <FormControl>
@@ -266,42 +200,12 @@ export function QuestionForm({ mode = 'create', question, topics, tests = [], on
                     )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="points"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Points</FormLabel>
-                                <FormControl>
-                                    <Input type="number" min="1" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="timeLimitSeconds"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Time Limit (seconds)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" min="1" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
                 <FormField
                     control={form.control}
                     name="explanation"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Explanation</FormLabel>
+                            <FormLabel>Explanation (Optional)</FormLabel>
                             <FormControl>
                                 <Textarea {...field} rows={3} />
                             </FormControl>
@@ -319,103 +223,37 @@ export function QuestionForm({ mode = 'create', question, topics, tests = [], on
                     }}
                 />
 
-                {/* Test and Section Assignment (Optional) */}
-                {mode === 'create' && tests.length > 0 && (
-                    <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                        <h4 className="font-medium text-sm">Assign to Test & Section (Optional)</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <FormLabel>Test</FormLabel>
-                                <Select
-                                    value={selectedTestId?.toString() || ""}
-                                    onValueChange={(value) => {
-                                        setSelectedTestId(value ? parseInt(value) : undefined);
-                                        setSelectedSectionId(undefined);
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a test (optional)" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {tests.map((test) => (
-                                            <SelectItem key={test.id} value={test.id.toString()}>
-                                                {test.title}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <FormLabel>Section</FormLabel>
-                                <Select
-                                    value={selectedSectionId?.toString() || ""}
-                                    onValueChange={(value) => setSelectedSectionId(value ? parseInt(value) : undefined)}
-                                    disabled={!selectedTestId || loadingSections}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={loadingSections ? "Loading..." : "Select a section"} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {sections.map((section) => (
-                                            <SelectItem key={section.sectionTemplateId} value={section.sectionTemplateId.toString()}>
-                                                {section.title} ({section.questionCount} questions)
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            If you select both a test and section, the question will be automatically assigned to that section.
-                        </p>
-                    </div>
+                {/* Sub-forms for each question type */}
+                {questionType === "ANALOGY" && (
+                    <AnalogyForm content={subFormContent} onChange={setSubFormContent} />
                 )}
-
-                {/* Conditional rendering based on question type */}
-                {form.watch("type") === "ANALOGY" && (
-                    <AnalogyForm
-                        content={content as AnalogyContent}
-                        onChange={handleContentChange}
-                    />
+                {questionType === "ALGEBRAIC_EXPRESSION" && (
+                    <MathForm content={subFormContent} onChange={setSubFormContent} />
                 )}
-
-                {form.watch("type") === "COMPARISON" && (
-                    <ComparisonForm
-                        content={content as ComparisonContent}
-                        onChange={handleContentChange}
-                    />
+                {questionType === "MATH_COMPARISON" && (
+                    <ComparisonForm content={subFormContent} onChange={setSubFormContent} />
                 )}
-
-                {form.watch("type") === "MATH_CALCULATION" && (
-                    <MathForm
-                        content={content as MathCalculationContent}
-                        onChange={handleContentChange}
-                    />
+                {questionType === "SENTENCE_COMPLETION" && (
+                    <SentenceForm content={subFormContent} onChange={setSubFormContent} />
                 )}
-
-                {form.watch("type") === "SENTENCE_COMPLETION" && (
-                    <SentenceForm
-                        content={content as SentenceCompletionContent}
-                        onChange={handleContentChange}
-                    />
-                )}
-
-                {form.watch("type") === "READING_COMPREHENSION" && (
+                {questionType === "READING_COMPREHENSION" && (
                     <ReadingComprehensionForm
-                        content={content as ReadingComprehensionFormData}
+                        content={subFormContent as ReadingComprehensionFormData}
                         passages={passages}
-                        onChange={handleContentChange}
+                        onChange={(newContent) => {
+                            if (newContent?.readingPassageId) {
+                                form.setValue('passageId', newContent.readingPassageId, { shouldValidate: true });
+                                const { readingPassageId, ...rest } = newContent;
+                                setSubFormContent(rest);
+                            } else {
+                                setSubFormContent(newContent);
+                            }
+                        }}
                     />
                 )}
 
                 <div className="flex justify-end gap-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onCancel}
-                        disabled={isSubmitting}
-                    >
+                    <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
                         Cancel
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>

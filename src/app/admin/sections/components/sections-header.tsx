@@ -28,17 +28,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 
 const MAX_SECTION_TEMPLATES = 10;
 
 const sectionTemplateSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(50, "Title must be less than 50 characters"),
+    titleKg: z.string().max(50, "Title must be less than 50 characters").optional(),
     description: z.string().max(500, "Description must be less than 500 characters").optional(),
     durationMinutes: z.coerce.number().min(1, "Duration must be at least 1 minute").max(240, "Duration cannot exceed 240 minutes"),
     displayOrder: z.coerce.number().min(1, "Display order must be at least 1").max(10, "Display order cannot exceed 10").optional(),
-    shuffleQuestions: z.boolean().optional(),
-    numberOfQuestions: z.coerce.number().min(0, "Number of questions must be at least 0").optional(),
+    questionCount: z.coerce.number().min(0, "Number of questions must be at least 0").optional(),
 });
 
 type SectionTemplateFormValues = z.infer<typeof sectionTemplateSchema>;
@@ -55,11 +54,11 @@ export function SectionsHeader({ currentCount }: SectionsHeaderProps) {
         resolver: zodResolver(sectionTemplateSchema),
         defaultValues: {
             title: "",
+            titleKg: "",
             description: "",
             durationMinutes: 60,
             displayOrder: currentCount + 1,
-            shuffleQuestions: false,
-            numberOfQuestions: 0,
+            questionCount: 0,
         },
     });
 
@@ -70,7 +69,7 @@ export function SectionsHeader({ currentCount }: SectionsHeaderProps) {
             form.reset();
             router.refresh();
         } catch (error) {
-            console.error('Failed to create section template:', error);
+            console.error("Failed to create section template:", error);
         }
     };
 
@@ -103,19 +102,34 @@ export function SectionsHeader({ currentCount }: SectionsHeaderProps) {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="title"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Section Title</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g., Mathematics Part 1" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="title"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Title (RU)</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="e.g., Математика" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="titleKg"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Title (KG)</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="e.g., Математика" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                             <FormField
                                 control={form.control}
                                 name="description"
@@ -133,13 +147,13 @@ export function SectionsHeader({ currentCount }: SectionsHeaderProps) {
                                     </FormItem>
                                 )}
                             />
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-3 gap-4">
                                 <FormField
                                     control={form.control}
                                     name="durationMinutes"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Duration (minutes)</FormLabel>
+                                            <FormLabel>Duration (min)</FormLabel>
                                             <FormControl>
                                                 <Input type="number" {...field} />
                                             </FormControl>
@@ -160,39 +174,17 @@ export function SectionsHeader({ currentCount }: SectionsHeaderProps) {
                                         </FormItem>
                                     )}
                                 />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
-                                    name="numberOfQuestions"
+                                    name="questionCount"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Expected Questions</FormLabel>
+                                            <FormLabel>Questions</FormLabel>
                                             <FormControl>
                                                 <Input type="number" {...field} />
                                             </FormControl>
-                                            <FormDescription>
-                                                Number of questions per section
-                                            </FormDescription>
+                                            <FormDescription>Per section</FormDescription>
                                             <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="shuffleQuestions"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>Shuffle Questions</FormLabel>
-                                            <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <FormDescription>
-                                                Randomize question order
-                                            </FormDescription>
                                         </FormItem>
                                     )}
                                 />
@@ -204,9 +196,7 @@ export function SectionsHeader({ currentCount }: SectionsHeaderProps) {
                                 }}>
                                     Cancel
                                 </Button>
-                                <Button type="submit">
-                                    Add Template
-                                </Button>
+                                <Button type="submit">Add Template</Button>
                             </div>
                         </form>
                     </Form>

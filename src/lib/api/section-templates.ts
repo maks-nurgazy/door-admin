@@ -1,174 +1,92 @@
-import axios from 'axios';
 import { api } from "@/lib/axios";
+import axios from "axios";
 
-export interface SectionTemplate {
+export interface SectionTemplateDto {
     id: number;
     title: string;
+    titleKg: string | null;
     description: string | null;
     durationMinutes: number;
-    displayOrder: number;
-    shuffleQuestions: boolean;
-    numberOfQuestions: number;
+    displayOrder: number | null;
+    questionCount: number | null;
 }
 
-export interface SectionTemplateListDto {
-    id: number;
+export interface CreateSectionTemplateRequest {
     title: string;
-    description: string | null;
-    durationMinutes: number;
-    displayOrder: number;
-    numberOfQuestions: number;
-}
-
-export interface SectionTemplatesResponse {
-    data: SectionTemplateListDto[];
-    currentPage: number;
-    pageSize: number;
-    totalItems: number;
-    totalPages: number;
-}
-
-export interface SectionTemplateFilters {
-    search?: string;
-    page?: number;
-    size?: number;
-}
-
-export interface CreateSectionTemplateDto {
-    title: string;
+    titleKg?: string;
     description?: string;
     durationMinutes: number;
     displayOrder?: number;
-    shuffleQuestions?: boolean;
-    numberOfQuestions?: number;
+    questionCount?: number;
 }
 
-export interface UpdateSectionTemplateDto {
-    title: string;
+export interface UpdateSectionTemplateRequest {
+    title?: string;
+    titleKg?: string;
     description?: string;
-    durationMinutes: number;
+    durationMinutes?: number;
     displayOrder?: number;
-    shuffleQuestions?: boolean;
-    numberOfQuestions?: number;
+    questionCount?: number;
 }
 
 export const sectionTemplatesApi = {
-    getSectionTemplates: async (filters?: SectionTemplateFilters): Promise<SectionTemplatesResponse> => {
+    getSectionTemplates: async (): Promise<SectionTemplateDto[]> => {
         try {
-            const searchQueries: string[] = [];
-
-            if (filters?.page !== undefined) {
-                searchQueries.push(`page=${filters.page}`);
-            }
-
-            if (filters?.size !== undefined) {
-                searchQueries.push(`size=${filters.size}`);
-            }
-
-            if (filters?.search) {
-                searchQueries.push(`search=title:like:${filters.search}`);
-            }
-
-            const queryString = searchQueries.join('&');
-            const url = `/section-templates${queryString ? `?${queryString}` : ''}`;
-
-            const response = await api.get(url);
+            const response = await api.get("/sections");
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Server error: ${error.response.data?.message || error.message}`);
-                } else if (error.request) {
-                    throw new Error('No response received from server. Please check your connection.');
-                }
+                if (error.response) throw new Error(`Server error: ${error.response.data?.message || error.message}`);
+                if (error.request) throw new Error("No response received from server. Please check your connection.");
             }
-            throw new Error('Failed to fetch section templates data');
+            throw new Error("Failed to fetch section templates");
         }
     },
 
-    getAllSectionTemplates: async (): Promise<SectionTemplate[]> => {
+    getSectionTemplate: async (id: number): Promise<SectionTemplateDto> => {
         try {
-            const url = `/section-templates/all`;
-            const response = await api.get(url);
+            const response = await api.get(`/sections/${id}`);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Server error: ${error.response.data?.message || error.message}`);
-                } else if (error.request) {
-                    throw new Error('No response received from server. Please check your connection.');
-                }
+                if (error.response) throw new Error(`Server error: ${error.response.data?.message || error.message}`);
             }
-            throw new Error('Failed to fetch section templates data');
+            throw new Error("Failed to fetch section template");
         }
     },
 
-    getSectionTemplate: async (id: number): Promise<SectionTemplate> => {
+    createSectionTemplate: async (data: CreateSectionTemplateRequest): Promise<SectionTemplateDto> => {
         try {
-            const response = await api.get(`/section-templates/${id}`);
+            const response = await api.post("/sections", data);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to get section template: ${error.response.data?.message || error.message}`);
-                }
+                if (error.response) throw new Error(`Failed to create section template: ${error.response.data?.message || error.message}`);
             }
-            throw new Error('Failed to get section template');
+            throw new Error("Failed to create section template");
         }
     },
 
-    createSectionTemplate: async (template: CreateSectionTemplateDto): Promise<SectionTemplate> => {
+    updateSectionTemplate: async (id: number, data: UpdateSectionTemplateRequest): Promise<SectionTemplateDto> => {
         try {
-            const response = await api.post('/section-templates', template);
+            const response = await api.put(`/sections/${id}`, data);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to create section template: ${error.response.data?.message || error.message}`);
-                }
+                if (error.response) throw new Error(`Failed to update section template: ${error.response.data?.message || error.message}`);
             }
-            throw new Error('Failed to create section template');
-        }
-    },
-
-    updateSectionTemplate: async (id: number, template: UpdateSectionTemplateDto): Promise<SectionTemplate> => {
-        try {
-            const response = await api.put(`/section-templates/${id}`, template);
-            return response.data;
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to update section template: ${error.response.data?.message || error.message}`);
-                }
-            }
-            throw new Error('Failed to update section template');
+            throw new Error("Failed to update section template");
         }
     },
 
     deleteSectionTemplate: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/section-templates/${id}`);
+            await api.delete(`/sections/${id}`);
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to delete section template: ${error.response.data?.message || error.message}`);
-                }
+                if (error.response) throw new Error(`Failed to delete section template: ${error.response.data?.message || error.message}`);
             }
-            throw new Error('Failed to delete section template');
+            throw new Error("Failed to delete section template");
         }
     },
-
-    getTemplateCount: async (): Promise<number> => {
-        try {
-            const response = await api.get('/section-templates/count');
-            return response.data;
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    throw new Error(`Failed to get template count: ${error.response.data?.message || error.message}`);
-                }
-            }
-            throw new Error('Failed to get template count');
-        }
-    }
 };

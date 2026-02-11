@@ -17,7 +17,6 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
   const searchParameters = await searchParams;
 
   const filters = {
-    search: searchParameters.search,
     status: searchParameters.status as any,
     page: searchParameters.page ? parseInt(searchParameters.page) - 1 : 0,
   };

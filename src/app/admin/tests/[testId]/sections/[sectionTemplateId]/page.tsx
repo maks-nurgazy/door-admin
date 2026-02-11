@@ -22,8 +22,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Plus, Trash2, Clock, BookOpen, FileQuestion } from "lucide-react";
-import { testsApi, Test, TestSection, TestSectionQuestion } from "@/lib/api/tests";
-import { questionsApi, Question } from "@/lib/api/questions";
+import { testsApi } from "@/lib/api/tests";
+import { sectionTemplatesApi, SectionTemplateDto } from "@/lib/api/section-templates";
+import { questionsApi, QuestionListDto } from "@/lib/api/questions";
+import { TestPackageDto } from "@/lib/api/tests";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,37 +40,35 @@ interface PageProps {
 export default function TestSectionQuestionsPage({ params }: PageProps) {
     const resolvedParams = use(params);
     const testId = parseInt(resolvedParams.testId);
-    const sectionTemplateId = parseInt(resolvedParams.sectionTemplateId);
+    const sectionId = parseInt(resolvedParams.sectionTemplateId);
 
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
-    const [test, setTest] = useState<Test | null>(null);
-    const [section, setSection] = useState<TestSection | null>(null);
-    const [questions, setQuestions] = useState<TestSectionQuestion[]>([]);
+    const [test, setTest] = useState<TestPackageDto | null>(null);
+    const [section, setSection] = useState<SectionTemplateDto | null>(null);
+    const [questions, setQuestions] = useState<QuestionListDto[]>([]);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
+    const [availableQuestions, setAvailableQuestions] = useState<QuestionListDto[]>([]);
     const [selectedQuestionIds, setSelectedQuestionIds] = useState<number[]>([]);
     const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
     useEffect(() => {
         loadData();
-    }, [testId, sectionTemplateId]);
+    }, [testId, sectionId]);
 
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [testData, sectionsData, questionsData] = await Promise.all([
+            const [testData, sectionData, questionsData] = await Promise.all([
                 testsApi.getTest(testId),
-                testsApi.getTestSections(testId),
-                testsApi.getTestSectionQuestions(testId, sectionTemplateId)
+                sectionTemplatesApi.getSectionTemplate(sectionId),
+                questionsApi.getQuestions({ sectionId, size: 200 }),
             ]);
-
             setTest(testData);
-            const currentSection = sectionsData.find(s => s.sectionTemplateId === sectionTemplateId);
-            setSection(currentSection || null);
-            setQuestions(questionsData);
+            setSection(sectionData);
+            setQuestions(questionsData.content);
         } catch (error) {
-            console.error('Failed to load data:', error);
+            console.error("Failed to load data:", error);
         } finally {
             setIsLoading(false);
         }
@@ -78,47 +78,42 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
         setIsLoadingQuestions(true);
         setIsAddDialogOpen(true);
         try {
-            const response = await questionsApi.getQuestions({ size: 100 });
-            // Filter out questions already in this section
-            const existingIds = questions.map(q => q.id);
-            const available = response.data.filter(q => !existingIds.includes(q.id));
-            setAvailableQuestions(available);
+            // Load questions NOT in this section (no sectionId filter = all questions, then exclude current)
+            const response = await questionsApi.getQuestions({ size: 200 });
+            const existingIds = new Set(questions.map((q) => q.id));
+            setAvailableQuestions(response.content.filter((q) => !existingIds.has(q.id)));
         } catch (error) {
-            console.error('Failed to load available questions:', error);
+            console.error("Failed to load available questions:", error);
         } finally {
             setIsLoadingQuestions(false);
         }
     };
 
     const toggleQuestionSelection = (questionId: number) => {
-        setSelectedQuestionIds(prev =>
-            prev.includes(questionId)
-                ? prev.filter(id => id !== questionId)
-                : [...prev, questionId]
+        setSelectedQuestionIds((prev) =>
+            prev.includes(questionId) ? prev.filter((id) => id !== questionId) : [...prev, questionId]
         );
     };
 
     const handleAddQuestions = async () => {
         if (selectedQuestionIds.length === 0) return;
-
         try {
-            await testsApi.updateTestSectionQuestions(testId, sectionTemplateId, selectedQuestionIds, 'assign');
+            await sectionTemplatesApi.updateSectionQuestions(sectionId, selectedQuestionIds, "assign");
             setIsAddDialogOpen(false);
             setSelectedQuestionIds([]);
             loadData();
         } catch (error) {
-            console.error('Failed to add questions:', error);
+            console.error("Failed to add questions:", error);
         }
     };
 
     const handleRemoveQuestion = async (questionId: number) => {
-        if (!confirm("Are you sure you want to remove this question from this section?")) return;
-
+        if (!confirm("Remove this question from this section?")) return;
         try {
-            await testsApi.updateTestSectionQuestions(testId, sectionTemplateId, [questionId], 'remove');
+            await sectionTemplatesApi.updateSectionQuestions(sectionId, [questionId], "remove");
             loadData();
         } catch (error) {
-            console.error('Failed to remove question:', error);
+            console.error("Failed to remove question:", error);
         }
     };
 
@@ -135,18 +130,18 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => router.push('/admin/tests')}>
+                <Button variant="ghost" size="icon" onClick={() => router.push("/admin/tests")}>
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                    <h1 className="text-2xl font-bold">{section?.title || 'Section'}</h1>
+                    <h1 className="text-2xl font-bold">{section?.title || "Section"}</h1>
                     <p className="text-muted-foreground">
-                        {test?.title} - Manage questions for this section
+                        {test?.title} — manage questions for this section
                     </p>
                 </div>
             </div>
 
-            {/* Section Info Card */}
+            {/* Section Info */}
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
@@ -154,17 +149,20 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
                             <CardTitle className="flex items-center gap-2">
                                 <BookOpen className="h-5 w-5" />
                                 {section?.title}
+                                {section?.titleKg && (
+                                    <span className="text-muted-foreground font-normal text-sm">/ {section.titleKg}</span>
+                                )}
                             </CardTitle>
-                            <CardDescription>{section?.description || 'No description'}</CardDescription>
+                            <CardDescription>{section?.description || "No description"}</CardDescription>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Clock className="h-4 w-4" />
-                                <span>{section?.durationMinutes} minutes</span>
+                                <span>{section?.durationMinutes} min</span>
                             </div>
                             <Badge variant="outline">
                                 <FileQuestion className="h-3 w-3 mr-1" />
-                                {questions.length} questions
+                                {questions.length} / {section?.questionCount ?? "?"} questions
                             </Badge>
                         </div>
                     </div>
@@ -186,7 +184,7 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
                     {questions.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                             <FileQuestion className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No questions added to this section yet.</p>
+                            <p>No questions in this section yet.</p>
                             <p className="text-sm">Click "Add Questions" to assign questions to this section.</p>
                         </div>
                     ) : (
@@ -197,7 +195,7 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
                                     <TableHead>Question</TableHead>
                                     <TableHead>Type</TableHead>
                                     <TableHead>Topics</TableHead>
-                                    <TableHead className="w-[100px]">Actions</TableHead>
+                                    <TableHead className="w-[80px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -205,14 +203,14 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
                                     <TableRow key={question.id}>
                                         <TableCell className="font-medium">{index + 1}</TableCell>
                                         <TableCell className="max-w-[400px]">
-                                            <p className="truncate">{question.questionText || 'Question text not available'}</p>
+                                            <p className="truncate">{question.questionPreview || "—"}</p>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{question.type}</Badge>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex gap-1 flex-wrap">
-                                                {question.topics?.slice(0, 2).map(topic => (
+                                                {question.topics?.slice(0, 2).map((topic) => (
                                                     <Badge key={topic.id} variant="secondary" className="text-xs">
                                                         {topic.title}
                                                     </Badge>
@@ -247,7 +245,7 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
                     <DialogHeader>
                         <DialogTitle>Add Questions to Section</DialogTitle>
                         <DialogDescription>
-                            Select questions to add to "{section?.title}"
+                            Select questions to add to &quot;{section?.title}&quot;
                         </DialogDescription>
                     </DialogHeader>
                     <ScrollArea className="h-[400px] rounded-md border p-4">
@@ -259,7 +257,7 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
                             </div>
                         ) : availableQuestions.length === 0 ? (
                             <div className="text-center py-8 text-muted-foreground">
-                                No available questions to add. All questions are already assigned to this section.
+                                No questions available to add.
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -277,10 +275,10 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
                                             onCheckedChange={() => toggleQuestionSelection(question.id)}
                                         />
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium truncate">{question.questionText || 'No question text'}</p>
+                                            <p className="font-medium truncate">{question.questionPreview || "—"}</p>
                                             <div className="flex gap-2 mt-1">
                                                 <Badge variant="outline" className="text-xs">{question.type}</Badge>
-                                                {question.topics?.slice(0, 2).map(topic => (
+                                                {question.topics?.slice(0, 2).map((topic) => (
                                                     <Badge key={topic.id} variant="secondary" className="text-xs">
                                                         {topic.title}
                                                     </Badge>
@@ -304,7 +302,7 @@ export default function TestSectionQuestionsPage({ params }: PageProps) {
                                 Cancel
                             </Button>
                             <Button onClick={handleAddQuestions} disabled={selectedQuestionIds.length === 0}>
-                                Add Selected Questions
+                                Add Selected
                             </Button>
                         </div>
                     </div>

@@ -84,6 +84,7 @@ export type QuestionsResponse = PageResponse<QuestionListDto>;
 export interface QuestionFilters {
     search?: string;
     topicId?: number;
+    sectionId?: number;
     questionType?: QuestionType;
     page?: number;
     size?: number;
@@ -98,6 +99,7 @@ export const questionsApi = {
             if (filters?.size !== undefined) params.set('size', String(filters.size));
             if (filters?.search) params.set('search', filters.search);
             if (filters?.topicId) params.set('topicId', String(filters.topicId));
+            if (filters?.sectionId) params.set('sectionId', String(filters.sectionId));
             if (filters?.questionType) params.set('questionType', filters.questionType);
 
             const qs = params.toString();

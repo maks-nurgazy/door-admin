@@ -30,29 +30,8 @@ export interface TestPackageDto {
     updatedAt: string;
 }
 
-export interface TestSection {
-    sectionTemplateId: number;
-    title: string;
-    description: string | null;
-    durationMinutes: number;
-    displayOrder: number;
-    questionCount: number;
-}
-
-export interface TestSectionQuestion {
-    id: number;
-    questionText: string;
-    type: string;
-    points: number;
-    timeLimitSeconds: number;
-    topics: {
-        id: number;
-        title: string;
-    }[];
-    topicCount: number;
-    createdAt: string;
-    updatedAt: string;
-}
+// Re-exported for convenience; sections are SectionTemplateDto from /sections API
+export type { SectionTemplateDto as TestSection } from "@/lib/api/section-templates";
 
 // Page response matching backend PageResponse
 export interface PageResponse<T> {
@@ -178,7 +157,7 @@ export const testsApi = {
         }
     },
 
-    getTestSections: async (testId: number): Promise<TestSection[]> => {
+    getTestSections: async (testId: number): Promise<import("@/lib/api/section-templates").SectionTemplateDto[]> => {
         try {
             const response = await api.get(`/tests/${testId}/sections`);
             return response.data;
@@ -187,28 +166,4 @@ export const testsApi = {
             throw error;
         }
     },
-
-    getTestSectionQuestions: async (testId: number, sectionTemplateId: number): Promise<TestSectionQuestion[]> => {
-        try {
-            const response = await api.get(`/tests/${testId}/sections/${sectionTemplateId}/questions`);
-            return response.data;
-        } catch (error) {
-            console.error('Failed to get test section questions:', error);
-            throw error;
-        }
-    },
-
-    updateTestSectionQuestions: async (
-        testId: number,
-        sectionTemplateId: number,
-        questionIds: number[],
-        action: 'assign' | 'remove' = 'assign'
-    ): Promise<void> => {
-        try {
-            await api.put(`/tests/${testId}/sections/${sectionTemplateId}/questions?action=${action}`, questionIds);
-        } catch (error) {
-            console.error('Failed to update test section questions:', error);
-            throw error;
-        }
-    }
 };

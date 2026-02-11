@@ -89,4 +89,15 @@ export const sectionTemplatesApi = {
             throw new Error("Failed to delete section template");
         }
     },
+
+    updateSectionQuestions: async (sectionId: number, questionIds: number[], action: 'assign' | 'remove' = 'assign'): Promise<void> => {
+        try {
+            await api.put(`/sections/${sectionId}/questions?action=${action}`, questionIds);
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) throw new Error(`Failed to update section questions: ${error.response.data?.message || error.message}`);
+            }
+            throw new Error("Failed to update section questions");
+        }
+    },
 };

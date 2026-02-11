@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil, Trash2, Eye, BookOpen, ChevronRight, Calendar, DollarSign } from "lucide-react";
-import { TestPackageListDto, TestPackageDto, TestSection, TestsResponse, testsApi } from "@/lib/api/tests";
+import { TestPackageListDto, TestPackageDto, TestsResponse, testsApi } from "@/lib/api/tests";
+import { SectionTemplateDto } from "@/lib/api/section-templates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { TestsHeader } from "./tests-header";
@@ -41,7 +42,7 @@ export function TestsTable({ initialData }: TestsTableProps) {
 
     // State for accordion view
     const [expandedTest, setExpandedTest] = useState<string | undefined>(undefined);
-    const [testSectionsData, setTestSectionsData] = useState<Record<number, TestSection[]>>({});
+    const [testSectionsData, setTestSectionsData] = useState<Record<number, SectionTemplateDto[]>>({});
     const [loadingSections, setLoadingSections] = useState<Record<number, boolean>>({});
 
     const currentPage = searchParams.get("page")
@@ -245,9 +246,9 @@ export function TestsTable({ initialData }: TestsTableProps) {
                                             <div className="space-y-2">
                                                 {testSectionsData[test.id]?.map((section) => (
                                                     <div
-                                                        key={section.sectionTemplateId}
+                                                        key={section.id}
                                                         className="flex items-center justify-between p-3 border rounded-md hover:bg-accent cursor-pointer transition-colors"
-                                                        onClick={() => handleSectionClick(test.id, section.sectionTemplateId)}
+                                                        onClick={() => handleSectionClick(test.id, section.id)}
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <BookOpen className="h-4 w-4 text-muted-foreground" />

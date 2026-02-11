@@ -11,7 +11,7 @@ import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Ban, CheckCircle2, Pencil, Eye} from "lucide-react";
-import {User, usersApi, UsersResponse} from "@/lib/api/users";
+import {User, usersApi, UsersResponse, UserStatus} from "@/lib/api/users";
 import { format } from "date-fns";
 
 interface UsersTableProps {
@@ -30,7 +30,6 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
         email: "",
         phone: "",
         status: "",
-        paymentStatus: "",
     });
 
     const currentPage = searchParams.get("page")
@@ -43,7 +42,7 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
         router.push(`?${params.toString()}`);
     };
 
-    const handleStatusChange = async (userId: number, newStatus: string) => {
+    const handleStatusChange = async (userId: number, newStatus: UserStatus) => {
         try {
             await usersApi.updateUserStatus(userId, newStatus);
             router.refresh();
@@ -58,9 +57,8 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email || "",
-            phone: user.phone,
+            phone: user.phone ?? "",
             status: user.status,
-            paymentStatus: user.paymentStatus,
         });
         setIsEditDialogOpen(true);
     };
@@ -71,9 +69,9 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
     };
 
     const handleSaveEdit = async () => {
-        if (selectedUser) {
+        if (selectedUser && editForm.status) {
             try {
-                await usersApi.updateUser(selectedUser.id, editForm);
+                await usersApi.updateUserStatus(selectedUser.id, editForm.status as UserStatus);
                 router.refresh();
                 setIsEditDialogOpen(false);
                 setSelectedUser(null);
@@ -85,25 +83,15 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case "APPROVED":
-                return <Badge className="bg-green-500">Approved</Badge>;
+            case "ACTIVE":
+                return <Badge className="bg-green-500">Active</Badge>;
             case "BANNED":
                 return <Badge variant="destructive">Banned</Badge>;
+            case "PAYMENT_SUBMITTED":
+                return <Badge className="bg-blue-500">Payment Submitted</Badge>;
+            case "PENDING_PAYMENT":
             default:
-                return <Badge variant="secondary">Pending</Badge>;
-        }
-    };
-
-    const getPaymentBadge = (status: string) => {
-        switch (status) {
-            case "PAID":
-                return <Badge className="bg-green-500">Paid</Badge>;
-            case "PENDING":
-                return <Badge className="bg-yellow-500">Pending</Badge>;
-            case "UNPAID":
-                return <Badge variant="secondary">Unpaid</Badge>;
-            default:
-                return <Badge variant="secondary">Unpaid</Badge>;
+                return <Badge variant="secondary">Pending Payment</Badge>;
         }
     };
 
@@ -122,20 +110,18 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                             <TableHead>Phone Number</TableHead>
                             <TableHead>Registration Date</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Payment</TableHead>
                             <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {usersData.data.map((user) => (
+                        {usersData.content.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">{`${user.firstName} ${user.lastName}`}</TableCell>
                                 <TableCell>{user.username}</TableCell>
                                 <TableCell>{user.email || '-'}</TableCell>
-                                <TableCell>{user.phone}</TableCell>
+                                <TableCell>{user.phone ?? '-'}</TableCell>
                                 <TableCell>{format(new Date(user.createdAt), "MMM dd, yyyy")}</TableCell>
                                 <TableCell>{getStatusBadge(user.status)}</TableCell>
-                                <TableCell>{getPaymentBadge(user.paymentStatus)}</TableCell>
                                 <TableCell>
                                     <div className="flex gap-2">
                                         <Button
@@ -234,25 +220,10 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                                         <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="PENDING">Pending</SelectItem>
-                                        <SelectItem value="APPROVED">Approved</SelectItem>
+                                        <SelectItem value="PENDING_PAYMENT">Pending Payment</SelectItem>
+                                        <SelectItem value="PAYMENT_SUBMITTED">Payment Submitted</SelectItem>
+                                        <SelectItem value="ACTIVE">Active</SelectItem>
                                         <SelectItem value="BANNED">Banned</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="paymentStatus">Payment Status</Label>
-                                <Select
-                                    value={editForm.paymentStatus}
-                                    onValueChange={(value) => setEditForm({...editForm, paymentStatus: value})}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select payment status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="PENDING">Pending</SelectItem>
-                                        <SelectItem value="PAID">Paid</SelectItem>
-                                        <SelectItem value="UNPAID">Unpaid</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -311,10 +282,6 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                                     <div className="space-y-2">
                                         <Label className="text-sm font-medium text-muted-foreground">Status</Label>
                                         <div>{getStatusBadge(selectedUser.status)}</div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-medium text-muted-foreground">Payment Status</Label>
-                                        <div>{getPaymentBadge(selectedUser.paymentStatus)}</div>
                                     </div>
                                 </div>
                             </div>

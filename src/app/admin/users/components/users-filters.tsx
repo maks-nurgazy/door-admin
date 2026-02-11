@@ -12,7 +12,6 @@ export function UsersFilters() {
 
     const [name, setName] = useState(searchParams.get("name") || "");
     const [status, setStatus] = useState(searchParams.get("status") || "all");
-    const [paymentStatus, setPaymentStatus] = useState(searchParams.get("paymentStatus") || "all");
 
     useCallback(
         (params: Record<string, string | null>) => {
@@ -109,26 +108,10 @@ export function UsersFilters() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="APPROVED">Approved</SelectItem>
+                    <SelectItem value="PENDING_PAYMENT">Pending Payment</SelectItem>
+                    <SelectItem value="PAYMENT_SUBMITTED">Payment Submitted</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
                     <SelectItem value="BANNED">Banned</SelectItem>
-                </SelectContent>
-            </Select>
-            <Select
-                value={paymentStatus}
-                onValueChange={(value) => {
-                    setPaymentStatus(value);
-                    updateFilters({paymentStatus: value});
-                }}
-            >
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by payment"/>
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Payments</SelectItem>
-                    <SelectItem value="PAID">Paid</SelectItem>
-                    <SelectItem value="UNPAID">Unpaid</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
                 </SelectContent>
             </Select>
         </div>

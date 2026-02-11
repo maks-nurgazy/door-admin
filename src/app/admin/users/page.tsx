@@ -18,9 +18,8 @@ export default async function UsersPage({searchParams}: PageProps) {
     // Parse search params
     const parameters = await searchParams;
     const filters = {
-        name: parameters.name,
+        search: parameters.name,
         status: parameters.status as any,
-        paymentStatus: parameters.paymentStatus as any,
         page: parameters.page ? parseInt(parameters.page) - 1 : 0,
     };
 

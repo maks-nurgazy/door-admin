@@ -33,6 +33,7 @@ import {
 import { ReadingPassage, ReadingPassageListItem, readingPassagesApi, UpdateReadingPassageDto } from "@/lib/api/reading-passages";
 import { PassageForm } from "./passage-form";
 import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface PassagesTableProps {
     initialData: ReadingPassageListItem[];
@@ -93,7 +94,7 @@ export function PassagesTable({ initialData }: PassagesTableProps) {
         }
     };
 
-    const fmt = (iso: string) => new Date(iso).toLocaleDateString();
+    const fmt = (iso: string) => format(new Date(iso), "MMM dd, yyyy");
 
     return (
         <>

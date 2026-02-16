@@ -180,7 +180,8 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="pl-6 w-[100px]">Type</TableHead>
+                                <TableHead className="pl-6 w-[60px]">ID</TableHead>
+                                <TableHead className="w-[100px]">Type</TableHead>
                                 <TableHead>Question</TableHead>
                                 <TableHead className="w-[220px]">Topics</TableHead>
                                 <TableHead className="w-[100px] pr-6 text-right">Actions</TableHead>
@@ -190,7 +191,8 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                             {isLoading ? (
                                 Array.from({ length: 10 }).map((_, i) => (
                                     <TableRow key={i}>
-                                        <TableCell className="pl-6"><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                                        <TableCell className="pl-6"><Skeleton className="h-4 w-8" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
                                         <TableCell><Skeleton className="h-4 w-full max-w-sm" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-28 rounded-full" /></TableCell>
                                         <TableCell className="pr-6">
@@ -204,7 +206,7 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                                 ))
                             ) : content.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="py-16 text-center">
+                                    <TableCell colSpan={5} className="py-16 text-center">
                                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                             <BookOpen className="h-8 w-8 opacity-40" />
                                             <p className="text-sm">No questions found</p>
@@ -216,7 +218,10 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                                     const typeConfig = TYPE_LABELS[question.type];
                                     return (
                                         <TableRow key={question.id} className="group">
-                                            <TableCell className="pl-6">
+                                            <TableCell className="pl-6 text-sm text-muted-foreground">
+                                                {question.id}
+                                            </TableCell>
+                                            <TableCell>
                                                 <span className={cn(
                                                     "inline-flex items-center justify-center min-w-[90px] px-2.5 py-0.5 rounded-full text-xs font-medium",
                                                     typeConfig.color
@@ -243,7 +248,7 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                                                     ) : (
                                                         <>
                                                             {question.topics.slice(0, 2).map((t) => (
-                                                                <Badge key={t.id} variant="secondary" className="text-xs font-normal">
+                                                                <Badge key={t.id} variant="secondary" className="text-xs font-normal min-w-[80px] justify-center">
                                                                     {t.title}
                                                                 </Badge>
                                                             ))}

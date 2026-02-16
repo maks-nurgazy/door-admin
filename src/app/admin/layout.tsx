@@ -40,7 +40,6 @@ const navigation = [
     {name: "Questions", href: "/admin/questions", icon: HelpCircle},
     {name: "Topics", href: "/admin/topics", icon: BookOpen},
     {name: "Reading Passages", href: "/admin/reading-passages", icon: ScrollText},
-    {name: "User Test Access", href: "/admin/user-test-access", icon: Shield},
 ];
 
 export default function AdminLayout({

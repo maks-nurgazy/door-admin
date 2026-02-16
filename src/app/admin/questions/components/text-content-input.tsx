@@ -4,13 +4,7 @@ import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { TextContent, DisplayType } from "@/lib/api/questions";
 import { s3Api } from "@/lib/api/s3";
 
@@ -22,7 +16,7 @@ interface TextContentInputProps {
     placeholder?: string;
 }
 
-const DISPLAY_TYPE_OPTIONS: { value: DisplayType; label: string }[] = [
+const TYPE_BUTTONS: { value: DisplayType; label: string }[] = [
     { value: 'TEXT', label: 'Text' },
     { value: 'LATEX', label: 'LaTeX' },
     { value: 'SVG', label: 'SVG' },
@@ -58,22 +52,28 @@ export function TextContentInput({ value, onChange, folder = 'questions', rows, 
     };
 
     return (
-        <div className="flex flex-col gap-1.5">
-            <Select value={value.displayType} onValueChange={(v) => handleTypeChange(v as DisplayType)}>
-                <SelectTrigger className="w-32 h-8 text-xs">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    {DISPLAY_TYPE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                            {opt.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+        <div className="flex flex-col gap-2">
+            {/* Type switcher — compact pill group */}
+            <div className="flex gap-1 flex-wrap">
+                {TYPE_BUTTONS.map((btn) => (
+                    <button
+                        key={btn.value}
+                        type="button"
+                        onClick={() => handleTypeChange(btn.value)}
+                        className={cn(
+                            "px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors",
+                            value.displayType === btn.value
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-background text-muted-foreground border-border hover:border-muted-foreground/60 hover:text-foreground"
+                        )}
+                    >
+                        {btn.label}
+                    </button>
+                ))}
+            </div>
 
             {value.displayType === 'NONE' && (
-                <span className="text-sm text-muted-foreground italic">(no content)</span>
+                <span className="text-sm text-muted-foreground italic py-1">(no content)</span>
             )}
 
             {value.displayType === 'TEXT' && (
@@ -83,6 +83,7 @@ export function TextContentInput({ value, onChange, folder = 'questions', rows, 
                         onChange={(e) => handleValueChange(e.target.value)}
                         rows={rows}
                         placeholder={placeholder}
+                        className="resize-none"
                     />
                 ) : (
                     <Input
@@ -98,8 +99,8 @@ export function TextContentInput({ value, onChange, folder = 'questions', rows, 
                     value={value.value}
                     onChange={(e) => handleValueChange(e.target.value)}
                     rows={rows ?? 3}
-                    placeholder={placeholder ?? (value.displayType === 'LATEX' ? 'LaTeX expression...' : 'SVG markup...')}
-                    className="font-mono text-sm"
+                    placeholder={placeholder ?? (value.displayType === 'LATEX' ? 'e.g. \\frac{x}{2} + 3 = 0' : 'SVG markup...')}
+                    className="font-mono text-sm resize-none"
                 />
             )}
 
@@ -131,7 +132,7 @@ export function TextContentInput({ value, onChange, folder = 'questions', rows, 
                     </div>
                     {value.value && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={value.value} alt="preview" className="max-h-32 rounded border object-contain" />
+                        <img src={value.value} alt="preview" className="max-h-32 rounded-md border object-contain" />
                     )}
                 </div>
             )}

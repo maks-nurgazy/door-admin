@@ -163,107 +163,129 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <FormField
-                    control={form.control}
-                    name="questionText"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Question Text</FormLabel>
-                            <FormControl>
-                                <TextContentInput
-                                    value={field.value}
-                                    onChange={field.onChange}
-                                    rows={2}
-                                    placeholder="Enter question text..."
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
 
-                <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Question Type</FormLabel>
-                            <Select
-                                value={field.value}
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    setSubFormContent(null);
-                                }}
-                            >
+                {/* Section 1: Question Content */}
+                <div className="rounded-lg border bg-card p-4 space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Question Content</p>
+                    <FormField
+                        control={form.control}
+                        name="questionText"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Question Text</FormLabel>
                                 <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
+                                    <TextContentInput
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        rows={3}
+                                        placeholder="Enter question text..."
+                                    />
                                 </FormControl>
-                                <SelectContent>
-                                    {getQuestionTypes().map((config) => (
-                                        <SelectItem key={config.type} value={config.type}>
-                                            {config.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="explanation"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Explanation (Optional)</FormLabel>
-                            <FormControl>
-                                <Textarea {...field} rows={3} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <TopicSelector
-                    topics={topics}
-                    selectedTopics={selectedTopics}
-                    onChange={setSelectedTopics}
-                    onTopicsChange={(topicIds) => {
-                        form.setValue('topicIds', topicIds, { shouldValidate: true });
-                    }}
-                />
-
-                {/* Sub-forms for each question type */}
-                {questionType === "ANALOGY" && (
-                    <AnalogyForm content={subFormContent} onChange={setSubFormContent} />
-                )}
-                {questionType === "ALGEBRAIC_EXPRESSION" && (
-                    <MathForm content={subFormContent} onChange={setSubFormContent} />
-                )}
-                {questionType === "MATH_COMPARISON" && (
-                    <ComparisonForm content={subFormContent} onChange={setSubFormContent} />
-                )}
-                {questionType === "SENTENCE_COMPLETION" && (
-                    <SentenceForm content={subFormContent} onChange={setSubFormContent} />
-                )}
-                {questionType === "READING_COMPREHENSION" && (
-                    <ReadingComprehensionForm
-                        content={subFormContent as ReadingComprehensionFormData}
-                        passages={passages}
-                        onChange={(newContent) => {
-                            if (newContent?.readingPassageId) {
-                                form.setValue('passageId', newContent.readingPassageId, { shouldValidate: true });
-                            }
-                            setSubFormContent(newContent);
-                        }}
+                                <FormMessage />
+                            </FormItem>
+                        )}
                     />
-                )}
+                    <FormField
+                        control={form.control}
+                        name="explanation"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Explanation <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                <FormControl>
+                                    <Textarea {...field} rows={2} placeholder="Explain the correct answer..." />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
-                <div className="flex justify-end gap-3">
+                {/* Section 2: Configuration */}
+                <div className="rounded-lg border bg-card p-4 space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Configuration</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="type"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Question Type</FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                            setSubFormContent(null);
+                                        }}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {getQuestionTypes().map((config) => (
+                                                <SelectItem key={config.type} value={config.type}>
+                                                    {config.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div>
+                            <FormLabel>Topics</FormLabel>
+                            <div className="mt-2">
+                                <TopicSelector
+                                    topics={topics}
+                                    selectedTopics={selectedTopics}
+                                    onChange={setSelectedTopics}
+                                    onTopicsChange={(topicIds) => {
+                                        form.setValue('topicIds', topicIds, { shouldValidate: true });
+                                    }}
+                                />
+                            </div>
+                            {form.formState.errors.topicIds && (
+                                <p className="text-sm font-medium text-destructive mt-1">
+                                    {form.formState.errors.topicIds.message}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Section 3: Answer Options */}
+                <div className="rounded-lg border bg-card p-4 space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Answer Options</p>
+                    {questionType === "ANALOGY" && (
+                        <AnalogyForm content={subFormContent} onChange={setSubFormContent} />
+                    )}
+                    {questionType === "ALGEBRAIC_EXPRESSION" && (
+                        <MathForm content={subFormContent} onChange={setSubFormContent} />
+                    )}
+                    {questionType === "MATH_COMPARISON" && (
+                        <ComparisonForm content={subFormContent} onChange={setSubFormContent} />
+                    )}
+                    {questionType === "SENTENCE_COMPLETION" && (
+                        <SentenceForm content={subFormContent} onChange={setSubFormContent} />
+                    )}
+                    {questionType === "READING_COMPREHENSION" && (
+                        <ReadingComprehensionForm
+                            content={subFormContent as ReadingComprehensionFormData}
+                            passages={passages}
+                            onChange={(newContent) => {
+                                if (newContent?.readingPassageId) {
+                                    form.setValue('passageId', newContent.readingPassageId, { shouldValidate: true });
+                                }
+                                setSubFormContent(newContent);
+                            }}
+                        />
+                    )}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-1">
                     <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
                         Cancel
                     </Button>

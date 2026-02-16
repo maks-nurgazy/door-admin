@@ -52,7 +52,7 @@ export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess,
                         Add Question
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
                     <DialogHeader>
                         <DialogTitle>Add New Question</DialogTitle>
                         <DialogDescription>Create a new question for your question bank</DialogDescription>

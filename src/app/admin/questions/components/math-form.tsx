@@ -1,14 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { CheckCircle2, Circle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { QuestionOption } from "@/lib/api/questions";
 import { TextContentInput } from "./text-content-input";
 
@@ -51,43 +45,53 @@ export function MathForm({ content, onChange }: MathFormProps) {
         setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, ...updated } : opt));
     };
 
-    const handleCorrectChange = (value: string) => {
-        const newId = parseInt(value);
-        setCorrectOptionId(newId);
-        setOptions(prev => prev.map(opt => ({ ...opt, isCorrect: opt.id === newId })));
+    const handleCorrectChange = (id: number) => {
+        setCorrectOptionId(id);
+        setOptions(prev => prev.map(opt => ({ ...opt, isCorrect: opt.id === id })));
     };
 
     return (
-        <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Options</h3>
-            {options.map((opt) => (
-                <div key={opt.id} className="flex items-start gap-3">
-                    <span className="pt-2 w-5 text-sm font-medium text-muted-foreground">{opt.label}</span>
-                    <div className="flex-1">
-                        <TextContentInput
-                            value={{ displayType: opt.displayType, value: opt.value }}
-                            onChange={(tc) => updateOption(opt.id, { displayType: tc.displayType, value: tc.value })}
-                            placeholder="LaTeX expression"
-                        />
+        <div className="space-y-2">
+            <p className="text-xs text-muted-foreground mb-3">Click the circle to mark the correct answer</p>
+            {options.map((opt) => {
+                const isCorrect = correctOptionId === opt.id;
+                return (
+                    <div
+                        key={opt.id}
+                        className={cn(
+                            "flex items-start gap-3 p-3 rounded-lg border-2 transition-all",
+                            isCorrect
+                                ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                                : "border-border hover:border-muted-foreground/40"
+                        )}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => handleCorrectChange(opt.id)}
+                            className="mt-2 shrink-0 focus:outline-none"
+                            title="Mark as correct"
+                        >
+                            {isCorrect
+                                ? <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                : <Circle className="h-5 w-5 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
+                            }
+                        </button>
+                        <div className={cn(
+                            "w-7 h-7 mt-1.5 shrink-0 rounded-full flex items-center justify-center text-xs font-bold",
+                            isCorrect ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                        )}>
+                            {opt.label}
+                        </div>
+                        <div className="flex-1">
+                            <TextContentInput
+                                value={{ displayType: opt.displayType, value: opt.value }}
+                                onChange={(tc) => updateOption(opt.id, { displayType: tc.displayType, value: tc.value })}
+                                placeholder="LaTeX expression"
+                            />
+                        </div>
                     </div>
-                </div>
-            ))}
-
-            <div className="space-y-1.5">
-                <Label>Correct Answer</Label>
-                <Select value={correctOptionId.toString()} onValueChange={handleCorrectChange}>
-                    <SelectTrigger className="w-48">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {options.map((opt) => (
-                            <SelectItem key={opt.id} value={opt.id.toString()}>
-                                {opt.label}: {opt.value || '(empty)'}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
+                );
+            })}
         </div>
     );
 }

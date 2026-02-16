@@ -27,6 +27,7 @@ import {
     QuestionType,
 } from "@/lib/api/questions";
 import { Topic } from "@/lib/api/topics";
+import { SectionTemplateDto } from "@/lib/api/section-templates";
 import { TopicSelector } from "./topic-selector";
 import { AnalogyForm } from "./analogy-form";
 import { ComparisonForm } from "./comparison-form";
@@ -50,6 +51,7 @@ const questionSchema = z.object({
     topicIds: z.array(z.number()).min(1, "At least one topic is required"),
     explanation: z.string().optional(),
     passageId: z.number().optional(),
+    sectionId: z.number().optional(),
 });
 
 export type QuestionFormValues = z.infer<typeof questionSchema>;
@@ -58,11 +60,12 @@ interface QuestionFormProps {
     mode?: 'create' | 'edit';
     question?: QuestionResponseDto;
     topics: Topic[];
+    sections: SectionTemplateDto[];
     onSubmit: (data: CreateQuestionRequest) => Promise<void>;
     onCancel: () => void;
 }
 
-export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCancel }: QuestionFormProps) {
+export function QuestionForm({ mode = 'create', question, topics, sections, onSubmit, onCancel }: QuestionFormProps) {
     const getTopicIds = (q?: QuestionResponseDto): number[] => {
         if (!q?.topics) return [];
         return q.topics.map(t => t.id);
@@ -103,12 +106,14 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
             topicIds: getTopicIds(question),
             explanation: question.explanation ?? "",
             passageId: question.passage?.id,
+            sectionId: question.section?.id,
         } : {
             questionText: { displayType: 'TEXT', value: "" },
             type: "ANALOGY",
             topicIds: [],
             explanation: "",
             passageId: undefined,
+            sectionId: undefined,
         },
     });
 
@@ -136,6 +141,7 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                 content,
                 explanation: data.explanation || undefined,
                 passageId: data.passageId,
+                sectionId: data.sectionId,
                 topicIds: data.topicIds,
             };
 
@@ -235,24 +241,52 @@ export function QuestionForm({ mode = 'create', question, topics, onSubmit, onCa
                                 </FormItem>
                             )}
                         />
-                        <div>
-                            <FormLabel>Topics</FormLabel>
-                            <div className="mt-2">
-                                <TopicSelector
-                                    topics={topics}
-                                    selectedTopics={selectedTopics}
-                                    onChange={setSelectedTopics}
-                                    onTopicsChange={(topicIds) => {
-                                        form.setValue('topicIds', topicIds, { shouldValidate: true });
-                                    }}
-                                />
-                            </div>
-                            {form.formState.errors.topicIds && (
-                                <p className="text-sm font-medium text-destructive mt-1">
-                                    {form.formState.errors.topicIds.message}
-                                </p>
+                        <FormField
+                            control={form.control}
+                            name="sectionId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Section</FormLabel>
+                                    <Select
+                                        value={field.value?.toString() ?? "none"}
+                                        onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select section..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="none">No section</SelectItem>
+                                            {sections.map((s) => (
+                                                <SelectItem key={s.id} value={s.id.toString()}>
+                                                    {s.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
                             )}
+                        />
+                    </div>
+                    <div>
+                        <FormLabel>Topics</FormLabel>
+                        <div className="mt-2">
+                            <TopicSelector
+                                topics={topics}
+                                selectedTopics={selectedTopics}
+                                onChange={setSelectedTopics}
+                                onTopicsChange={(topicIds) => {
+                                    form.setValue('topicIds', topicIds, { shouldValidate: true });
+                                }}
+                            />
                         </div>
+                        {form.formState.errors.topicIds && (
+                            <p className="text-sm font-medium text-destructive mt-1">
+                                {form.formState.errors.topicIds.message}
+                            </p>
+                        )}
                     </div>
                 </div>
 

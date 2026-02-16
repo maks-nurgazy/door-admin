@@ -76,6 +76,7 @@ export interface CreateQuestionRequest {
     content: QuestionContent;
     explanation?: string;
     passageId?: number;
+    sectionId?: number;
     topicIds: number[];
 }
 

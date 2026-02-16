@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { questionsApi, QuestionResponseDto, CreateQuestionRequest } from "@/lib/api/questions";
 import { Topic } from "@/lib/api/topics";
+import { SectionTemplateDto } from "@/lib/api/section-templates";
 import { QuestionForm, QuestionFormValues } from "./question-form";
 
 interface QuestionsHeaderProps {
@@ -14,9 +15,10 @@ interface QuestionsHeaderProps {
     onClose?: () => void;
     onSuccess?: () => void;
     topics: Topic[];
+    sections: SectionTemplateDto[];
 }
 
-export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess, topics = [] }: QuestionsHeaderProps) {
+export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess, topics = [], sections = [] }: QuestionsHeaderProps) {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
     const handleSubmit = async (data: CreateQuestionRequest) => {
@@ -36,6 +38,7 @@ export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess,
                 mode="edit"
                 question={question}
                 topics={topics}
+                sections={sections}
                 onSubmit={handleSubmit}
                 onCancel={onClose!}
             />
@@ -60,6 +63,7 @@ export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess,
                     <div className="flex-1 overflow-y-auto px-1">
                         <QuestionForm
                             topics={topics}
+                            sections={sections}
                             onSubmit={handleSubmit}
                             onCancel={() => setIsAddDialogOpen(false)}
                         />

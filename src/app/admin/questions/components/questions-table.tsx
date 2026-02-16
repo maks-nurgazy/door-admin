@@ -38,6 +38,7 @@ import {
     questionsApi,
 } from "@/lib/api/questions";
 import { Topic } from "@/lib/api/topics";
+import { SectionTemplateDto } from "@/lib/api/section-templates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { QuestionsHeader } from "./questions-header";
@@ -53,6 +54,7 @@ import { cn } from "@/lib/utils";
 interface QuestionsTableProps {
     initialData: QuestionsResponse;
     topics: Topic[];
+    sections: SectionTemplateDto[];
 }
 
 const TYPE_LABELS: Record<QuestionType, { label: string; color: string }> = {
@@ -70,7 +72,7 @@ function getPageNumbers(current: number, total: number): (number | '...')[] {
     return [0, '...', current - 1, current, current + 1, '...', total - 1];
 }
 
-export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
+export function QuestionsTable({ initialData, topics, sections }: QuestionsTableProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -457,6 +459,7 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                     mode="edit"
                                     question={questionDetail}
                                     topics={topics}
+                                    sections={sections}
                                     onClose={() => {
                                         setIsEditDialogOpen(false);
                                         setSelectedQuestion(null);

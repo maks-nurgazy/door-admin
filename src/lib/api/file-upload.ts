@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getSession } from 'next-auth/react';
 
 const FILE_SERVICE_URL = process.env.NEXT_PUBLIC_FILE_SERVICE_URL || 'http://localhost:8088';
 
@@ -29,13 +30,22 @@ export const fileUploadApi = {
      */
     uploadFile: async (file: File): Promise<FileUploadResponse> => {
         try {
+            const session = await getSession();
+            const headers: Record<string, string> = {
+                'Content-Type': 'multipart/form-data',
+            };
+            if (session?.user?.id) {
+                headers['X-User-Id'] = String(session.user.id);
+            }
+            if (session?.accessToken) {
+                headers['Authorization'] = `Bearer ${session.accessToken}`;
+            }
+
             const formData = new FormData();
             formData.append('file', file);
 
             const response = await axios.post(`${FILE_SERVICE_URL}/files/upload`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+                headers,
             });
 
             return response.data;

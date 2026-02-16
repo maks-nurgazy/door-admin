@@ -171,41 +171,7 @@ export function QuestionForm({ mode = 'create', question, topics, sections, onSu
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
 
-                {/* Section 1: Question Content */}
-                <div className="rounded-lg border bg-card p-4 space-y-4">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Question Content</p>
-                    <FormField
-                        control={form.control}
-                        name="questionText"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Question Text</FormLabel>
-                                <FormControl>
-                                    <TextContentInput
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                        rows={3}
-                                        placeholder="Enter question text..."
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="explanation"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Explanation <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                                <FormControl>
-                                    <Textarea {...field} rows={2} placeholder="Explain the correct answer..." />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
+
 
                 {/* Section 2: Configuration */}
                 <div className="rounded-lg border bg-card p-4 space-y-4">
@@ -288,6 +254,42 @@ export function QuestionForm({ mode = 'create', question, topics, sections, onSu
                             </p>
                         )}
                     </div>
+                </div>
+
+                {/* Section 1: Question Content */}
+                <div className="rounded-lg border bg-card p-4 space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Question Content</p>
+                    <FormField
+                        control={form.control}
+                        name="questionText"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Question Text</FormLabel>
+                                <FormControl>
+                                    <TextContentInput
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        rows={3}
+                                        placeholder="Enter question text..."
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="explanation"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Explanation <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                <FormControl>
+                                    <Textarea {...field} rows={2} placeholder="Explain the correct answer..." />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
 
                 {/* Section 3: Answer Options */}

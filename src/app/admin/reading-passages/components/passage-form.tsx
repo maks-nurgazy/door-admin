@@ -97,12 +97,19 @@ export function PassageForm({ passage, onSubmit, onCancel, saving }: PassageForm
     };
 
     const handleSubmit = async (data: PassageFormValues) => {
-        await onSubmit({
-            title: data.title,
-            description: data.description || undefined,
-            passageText: data.passageText || undefined,
-            passageFileUrl: data.passageFileUrl || undefined,
-        });
+        const payload: CreateReadingPassageDto = {
+            title: data.title.trim(),
+        };
+        if (data.description && data.description.trim()) {
+            payload.description = data.description.trim();
+        }
+        if (data.passageText && data.passageText.trim()) {
+            payload.passageText = data.passageText.trim();
+        }
+        if (data.passageFileUrl && data.passageFileUrl.trim()) {
+            payload.passageFileUrl = data.passageFileUrl.trim();
+        }
+        await onSubmit(payload);
     };
 
     const currentFileUrl = form.watch("passageFileUrl");

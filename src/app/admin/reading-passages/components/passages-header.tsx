@@ -27,6 +27,7 @@ export function PassagesHeader() {
             setOpen(false);
             router.refresh();
         } catch (err) {
+            console.error("Create passage error:", err);
             toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to create passage", variant: "destructive" });
         } finally {
             setSaving(false);

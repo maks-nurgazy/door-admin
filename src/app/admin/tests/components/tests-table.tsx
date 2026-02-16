@@ -100,6 +100,11 @@ export function TestsTable({ initialData }: TestsTableProps) {
     // Load sections for a test when accordion is expanded
     const handleTestExpand = async (testId: string) => {
         const id = parseInt(testId);
+        if (!testId || isNaN(id)) {
+            setExpandedTest(undefined);
+            return;
+        }
+
         if (expandedTest === testId) {
             setExpandedTest(undefined);
             return;

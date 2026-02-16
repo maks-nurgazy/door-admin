@@ -29,18 +29,18 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, Pencil, Trash2, Calendar } from "lucide-react";
+import { Eye, Pencil, Trash2, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import {
     QuestionListDto,
     QuestionResponseDto,
     QuestionsResponse,
+    QuestionType,
     questionsApi,
 } from "@/lib/api/questions";
 import { Topic } from "@/lib/api/topics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { QuestionsHeader } from "./questions-header";
-import { formatDateBeautiful } from "@/lib/utils";
 import {
     Tooltip,
     TooltipContent,
@@ -48,10 +48,26 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface QuestionsTableProps {
     initialData: QuestionsResponse;
     topics: Topic[];
+}
+
+const TYPE_LABELS: Record<QuestionType, { label: string; color: string }> = {
+    ANALOGY: { label: "Analogy", color: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300" },
+    ALGEBRAIC_EXPRESSION: { label: "Algebra", color: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" },
+    MATH_COMPARISON: { label: "Comparison", color: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" },
+    SENTENCE_COMPLETION: { label: "Sentence", color: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" },
+    READING_COMPREHENSION: { label: "Reading", color: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
+};
+
+function getPageNumbers(current: number, total: number): (number | '...')[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+    if (current <= 3) return [0, 1, 2, 3, 4, '...', total - 1];
+    if (current >= total - 4) return [0, '...', total - 5, total - 4, total - 3, total - 2, total - 1];
+    return [0, '...', current - 1, current, current + 1, '...', total - 1];
 }
 
 export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
@@ -96,13 +112,11 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    const handleView = async (question: QuestionListDto) => {
-        setSelectedQuestion(question);
-        setIsViewDialogOpen(true);
+    const loadDetail = async (id: number) => {
         setIsLoadingDetail(true);
         setQuestionDetail(null);
         try {
-            const detail = await questionsApi.getQuestionById(question.id);
+            const detail = await questionsApi.getQuestionById(id);
             setQuestionDetail(detail);
         } catch (error) {
             console.error('Failed to fetch question details:', error);
@@ -111,9 +125,16 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
         }
     };
 
+    const handleView = (question: QuestionListDto) => {
+        setSelectedQuestion(question);
+        setIsViewDialogOpen(true);
+        loadDetail(question.id);
+    };
+
     const handleEdit = (question: QuestionListDto) => {
         setSelectedQuestion(question);
         setIsEditDialogOpen(true);
+        loadDetail(question.id);
     };
 
     const handleDelete = (question: QuestionListDto) => {
@@ -137,37 +158,41 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
         setQuestionsData(initialData);
     }, [initialData]);
 
+    const { content, page, size, totalElements, totalPages, first, last } = questionsData;
+    const showingFrom = totalElements === 0 ? 0 : page * size + 1;
+    const showingTo = Math.min(page * size + size, totalElements);
+    const pageNumbers = getPageNumbers(page, totalPages);
+
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Questions Overview</CardTitle>
+            <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                    <CardTitle>Questions</CardTitle>
+                    <span className="text-sm text-muted-foreground">
+                        {totalElements} question{totalElements !== 1 ? 's' : ''} total
+                    </span>
+                </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
                 <TooltipProvider>
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[80px]">ID</TableHead>
-                                <TableHead>Question Preview</TableHead>
-                                <TableHead className="w-[160px]">Type</TableHead>
-                                <TableHead className="w-[200px]">Topics</TableHead>
-                                <TableHead className="w-[120px]">Section</TableHead>
-                                <TableHead className="w-[140px]">Created</TableHead>
-                                <TableHead className="w-[120px]">Actions</TableHead>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="pl-6 w-[100px]">Type</TableHead>
+                                <TableHead>Question</TableHead>
+                                <TableHead className="w-[220px]">Topics</TableHead>
+                                <TableHead className="w-[100px] pr-6 text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                Array.from({ length: 10 }).map((_, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell><Skeleton className="h-4 w-[60px]" /></TableCell>
-                                        <TableCell><Skeleton className="h-4 w-[300px]" /></TableCell>
-                                        <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
-                                        <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-                                        <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                                        <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-2">
+                                Array.from({ length: 10 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell className="pl-6"><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-full max-w-sm" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-28 rounded-full" /></TableCell>
+                                        <TableCell className="pr-6">
+                                            <div className="flex justify-end gap-1">
                                                 <Skeleton className="h-8 w-8 rounded-md" />
                                                 <Skeleton className="h-8 w-8 rounded-md" />
                                                 <Skeleton className="h-8 w-8 rounded-md" />
@@ -175,116 +200,142 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                                         </TableCell>
                                     </TableRow>
                                 ))
+                            ) : content.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="py-16 text-center">
+                                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                            <BookOpen className="h-8 w-8 opacity-40" />
+                                            <p className="text-sm">No questions found</p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
                             ) : (
-                                questionsData.content.map((question) => (
-                                    <TableRow key={question.id}>
-                                        <TableCell className="font-mono text-sm text-muted-foreground">
-                                            #{question.id}
-                                        </TableCell>
-                                        <TableCell className="font-medium max-w-md">
-                                            <div className="truncate">{question.questionPreview || 'No preview'}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline">{question.type}</Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-wrap gap-1">
-                                                {question.topics.length > 0 ? (
-                                                    question.topics.slice(0, 2).map((topic) => (
-                                                        <Badge key={topic.id} variant="secondary" className="text-xs">
-                                                            {topic.title}
-                                                        </Badge>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-xs text-muted-foreground">No topics</span>
-                                                )}
-                                                {question.topics.length > 2 && (
-                                                    <Badge variant="outline" className="text-xs">
-                                                        +{question.topics.length - 2}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">
-                                            {question.sectionName || '—'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div className="text-sm text-muted-foreground flex items-center gap-1 cursor-help">
-                                                        <Calendar className="h-3 w-3" />
-                                                        <span suppressHydrationWarning>{formatDateBeautiful(question.createdAt)}</span>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent suppressHydrationWarning>
-                                                    <p>{new Date(question.createdAt).toLocaleDateString('en-US', {
-                                                        weekday: 'long',
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric'
-                                                    })}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-2">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" onClick={() => handleView(question)}>
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>View details</TooltipContent>
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(question)}>
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Edit question</TooltipContent>
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleDelete(question)}
-                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Delete question</TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                content.map((question) => {
+                                    const typeConfig = TYPE_LABELS[question.type];
+                                    return (
+                                        <TableRow key={question.id} className="group">
+                                            <TableCell className="pl-6">
+                                                <span className={cn(
+                                                    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                                    typeConfig.color
+                                                )}>
+                                                    {typeConfig.label}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm line-clamp-2 leading-snug">
+                                                        {question.questionPreview || <span className="text-muted-foreground italic">No preview</span>}
+                                                    </span>
+                                                    {question.hasPassage && (
+                                                        <span className="shrink-0 text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                                                            passage
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {question.topics.length === 0 ? (
+                                                        <span className="text-xs text-muted-foreground">—</span>
+                                                    ) : (
+                                                        <>
+                                                            {question.topics.slice(0, 2).map((t) => (
+                                                                <Badge key={t.id} variant="secondary" className="text-xs font-normal">
+                                                                    {t.title}
+                                                                </Badge>
+                                                            ))}
+                                                            {question.topics.length > 2 && (
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    +{question.topics.length - 2}
+                                                                </Badge>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="pr-6">
+                                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(question)}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>View</TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(question)}>
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Edit</TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                onClick={() => handleDelete(question)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Delete</TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
                             )}
                         </TableBody>
                     </Table>
                 </TooltipProvider>
 
-                {questionsData.totalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={questionsData.first}
-                        >
-                            Previous
-                        </Button>
-                        <span className="py-2 px-4">
-                            Page {questionsData.page + 1} of {questionsData.totalPages}
-                        </span>
-                        <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={questionsData.last}
-                        >
-                            Next
-                        </Button>
+                {/* Pagination */}
+                {totalPages > 0 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t">
+                        <p className="text-sm text-muted-foreground">
+                            {totalElements === 0 ? 'No results' : `Showing ${showingFrom}–${showingTo} of ${totalElements}`}
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handlePageChange(page - 1)}
+                                disabled={first}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            {pageNumbers.map((p, i) =>
+                                p === '...' ? (
+                                    <span key={`dots-${i}`} className="px-1 text-muted-foreground text-sm">…</span>
+                                ) : (
+                                    <Button
+                                        key={p}
+                                        variant={p === page ? "default" : "outline"}
+                                        size="icon"
+                                        className="h-8 w-8 text-sm"
+                                        onClick={() => handlePageChange(p as number)}
+                                    >
+                                        {(p as number) + 1}
+                                    </Button>
+                                )
+                            )}
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handlePageChange(page + 1)}
+                                disabled={last}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 )}
 
@@ -293,90 +344,86 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                     setIsViewDialogOpen(open);
                     if (!open) setQuestionDetail(null);
                 }}>
-                    <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Question Details</DialogTitle>
-                            <DialogDescription>View complete information about this question</DialogDescription>
+                            <DialogDescription>Full question information</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="flex-1 overflow-y-auto">
-                            <div className="space-y-4 p-4 pr-6">
+                            <div className="space-y-4 p-1 pr-4">
                                 {isLoadingDetail ? (
-                                    <div className="space-y-4">
-                                        <Skeleton className="h-20 w-full" />
-                                        <Skeleton className="h-40 w-full" />
+                                    <div className="space-y-3">
+                                        <Skeleton className="h-6 w-1/3" />
+                                        <Skeleton className="h-16 w-full" />
+                                        <Skeleton className="h-32 w-full" />
                                     </div>
                                 ) : questionDetail && (
                                     <>
-                                        <div className="flex items-center justify-between border-b pb-4">
-                                            <div>
-                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Question ID</h3>
-                                                <p className="text-lg font-mono">#{questionDetail.id}</p>
-                                            </div>
-                                            <div className="text-right" suppressHydrationWarning>
-                                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Created</h3>
-                                                <p className="text-sm text-muted-foreground">{formatDateBeautiful(questionDetail.createdAt)}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label className="text-sm text-muted-foreground">Type</Label>
-                                                <div className="mt-1"><Badge variant="outline">{questionDetail.type}</Badge></div>
-                                            </div>
-                                            {questionDetail.section && (
-                                                <div>
-                                                    <Label className="text-sm text-muted-foreground">Section</Label>
-                                                    <p className="text-sm mt-1">{questionDetail.section.name}</p>
-                                                </div>
-                                            )}
+                                        <div className="flex items-center gap-2">
+                                            {(() => {
+                                                const t = TYPE_LABELS[questionDetail.type];
+                                                return (
+                                                    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", t.color)}>
+                                                        {t.label}
+                                                    </span>
+                                                );
+                                            })()}
                                             {questionDetail.passage && (
-                                                <div>
-                                                    <Label className="text-sm text-muted-foreground">Passage</Label>
-                                                    <p className="text-sm mt-1">{questionDetail.passage.title}</p>
-                                                </div>
+                                                <Badge variant="outline" className="text-xs">Passage: {questionDetail.passage.title}</Badge>
                                             )}
                                         </div>
 
-                                        <div>
-                                            <Label className="text-sm text-muted-foreground">Question Text</Label>
-                                            <p className="text-lg p-3 bg-muted rounded-md mt-1">
+                                        <div className="rounded-lg bg-muted p-4">
+                                            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Question Text</Label>
+                                            <p className="mt-2 text-base leading-relaxed">
                                                 {questionDetail.content?.questionText?.value || 'No text'}
                                             </p>
                                         </div>
 
+                                        {questionDetail.content?.options?.length > 0 && (
+                                            <div className="space-y-2">
+                                                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Options</Label>
+                                                {questionDetail.content.options.map((opt) => {
+                                                    const correct = opt.id === questionDetail.content.correctOptionId;
+                                                    return (
+                                                        <div
+                                                            key={opt.id}
+                                                            className={cn(
+                                                                "flex items-center gap-3 p-3 rounded-lg border-2 text-sm",
+                                                                correct
+                                                                    ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                                                                    : "border-border"
+                                                            )}
+                                                        >
+                                                            <div className={cn(
+                                                                "w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-bold",
+                                                                correct ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                                                            )}>
+                                                                {opt.label}
+                                                            </div>
+                                                            <span className="flex-1">{opt.value}</span>
+                                                            {correct && (
+                                                                <span className="text-xs font-medium text-green-600">✓ Correct</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
                                         {questionDetail.explanation && (
-                                            <div>
-                                                <Label className="text-sm text-muted-foreground">Explanation</Label>
-                                                <p className="text-sm p-3 bg-muted rounded-md mt-1">{questionDetail.explanation}</p>
+                                            <div className="rounded-lg border p-4">
+                                                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Explanation</Label>
+                                                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{questionDetail.explanation}</p>
                                             </div>
                                         )}
 
                                         {questionDetail.topics.length > 0 && (
                                             <div>
-                                                <Label className="text-sm text-muted-foreground">Topics</Label>
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    {questionDetail.topics.map((topic) => (
-                                                        <Badge key={topic.id} variant="secondary">{topic.title}</Badge>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {questionDetail.content?.options?.length > 0 && (
-                                            <div>
-                                                <Label className="text-sm text-muted-foreground">Options</Label>
-                                                <div className="space-y-1 mt-1">
-                                                    {questionDetail.content.options.map((opt) => (
-                                                        <div
-                                                            key={opt.id}
-                                                            className={`p-2 rounded text-sm border ${opt.id === questionDetail.content.correctOptionId ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border'}`}
-                                                        >
-                                                            <span className="font-medium mr-2">{opt.label}.</span>
-                                                            {opt.value}
-                                                            {opt.id === questionDetail.content.correctOptionId && (
-                                                                <span className="ml-2 text-green-600 text-xs font-medium">✓ Correct</span>
-                                                            )}
-                                                        </div>
+                                                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Topics</Label>
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {questionDetail.topics.map((t) => (
+                                                        <Badge key={t.id} variant="secondary">{t.title}</Badge>
                                                     ))}
                                                 </div>
                                             </div>
@@ -389,14 +436,23 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                 </Dialog>
 
                 {/* Edit Dialog */}
-                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+                    setIsEditDialogOpen(open);
+                    if (!open) { setSelectedQuestion(null); setQuestionDetail(null); }
+                }}>
+                    <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>Edit Question</DialogTitle>
                             <DialogDescription>Update the question details</DialogDescription>
                         </DialogHeader>
                         <div className="flex-1 overflow-y-auto px-1">
-                            {selectedQuestion && questionDetail && (
+                            {isLoadingDetail ? (
+                                <div className="space-y-3 py-4">
+                                    <Skeleton className="h-24 w-full" />
+                                    <Skeleton className="h-12 w-full" />
+                                    <Skeleton className="h-40 w-full" />
+                                </div>
+                            ) : selectedQuestion && questionDetail && (
                                 <QuestionsHeader
                                     mode="edit"
                                     question={questionDetail}
@@ -428,21 +484,25 @@ export function QuestionsTable({ initialData, topics }: QuestionsTableProps) {
                             </div>
                         </AlertDialogHeader>
                         {selectedQuestion && (
-                            <div className="mt-4 p-4 rounded-lg bg-muted">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-xs font-mono text-muted-foreground">#{selectedQuestion.id}</span>
-                                    <Badge variant="outline">{selectedQuestion.type}</Badge>
-                                </div>
-                                <div className="text-sm font-medium">{selectedQuestion.questionPreview}</div>
+                            <div className="mt-2 p-3 rounded-lg bg-muted text-sm">
+                                {(() => {
+                                    const t = TYPE_LABELS[selectedQuestion.type];
+                                    return (
+                                        <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mr-2", t.color)}>
+                                            {t.label}
+                                        </span>
+                                    );
+                                })()}
+                                {selectedQuestion.questionPreview}
                             </div>
                         )}
                         <AlertDialogFooter>
                             <AlertDialogCancel onClick={() => setSelectedQuestion(null)}>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={confirmDelete}
-                                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                                className="bg-destructive hover:bg-destructive/90"
                             >
-                                Delete Question
+                                Delete
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

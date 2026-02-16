@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
@@ -19,6 +20,7 @@ interface QuestionsHeaderProps {
 }
 
 export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess, topics = [], sections = [] }: QuestionsHeaderProps) {
+    const router = useRouter();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
     const handleSubmit = async (data: CreateQuestionRequest) => {
@@ -28,7 +30,11 @@ export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess,
         } else {
             await questionsApi.createQuestion(data);
             setIsAddDialogOpen(false);
-            onSuccess?.();
+            if (onSuccess) {
+                onSuccess();
+            } else {
+                router.refresh();
+            }
         }
     };
 

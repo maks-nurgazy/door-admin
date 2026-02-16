@@ -94,4 +94,21 @@ export const paymentsApi = {
             throw new Error('Failed to reject payment');
         }
     },
+
+    createManualPayment: async (data: {
+        userId: number;
+        amount: number;
+        currency: string;
+        receiptUrl: string;
+    }): Promise<Payment> => {
+        try {
+            const response = await api.post('/payments/create', data);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) throw new Error(`Failed to create payment: ${error.response.data?.message || error.message}`);
+            }
+            throw new Error('Failed to create payment');
+        }
+    },
 };

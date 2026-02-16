@@ -8,6 +8,7 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,} fr
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
+import {TablePagination} from "@/components/table-pagination";
 import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Ban, CheckCircle2, Pencil, Eye} from "lucide-react";
@@ -147,27 +148,15 @@ export function UsersTable({initialData: usersData}: UsersTableProps) {
                     </TableBody>
                 </Table>
 
-                {usersData.totalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 0}
-                        >
-                            Previous
-                        </Button>
-                        <span className="py-2 px-4">
-              Page {currentPage + 1} of {usersData.totalPages}
-            </span>
-                        <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === usersData.totalPages - 1}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                )}
+                <TablePagination
+                    page={currentPage}
+                    totalPages={usersData.totalPages}
+                    totalElements={usersData.totalElements}
+                    size={usersData.size}
+                    first={usersData.first}
+                    last={usersData.last}
+                    onPageChange={handlePageChange}
+                />
 
                 {/* Edit User Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

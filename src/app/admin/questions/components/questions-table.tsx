@@ -29,7 +29,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, Pencil, Trash2, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Pencil, Trash2, BookOpen } from "lucide-react";
 import {
     QuestionListDto,
     QuestionResponseDto,
@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "@/components/table-pagination";
 
 interface QuestionsTableProps {
     initialData: QuestionsResponse;
@@ -64,13 +65,6 @@ const TYPE_LABELS: Record<QuestionType, { label: string; color: string }> = {
     SENTENCE_COMPLETION: { label: "Sentence", color: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" },
     READING_COMPREHENSION: { label: "Reading", color: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
 };
-
-function getPageNumbers(current: number, total: number): (number | '...')[] {
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i);
-    if (current <= 3) return [0, 1, 2, 3, 4, '...', total - 1];
-    if (current >= total - 4) return [0, '...', total - 5, total - 4, total - 3, total - 2, total - 1];
-    return [0, '...', current - 1, current, current + 1, '...', total - 1];
-}
 
 export function QuestionsTable({ initialData, topics, sections }: QuestionsTableProps) {
     const router = useRouter();
@@ -161,9 +155,6 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
     }, [initialData]);
 
     const { content, page, size, totalElements, totalPages, first, last } = questionsData;
-    const showingFrom = totalElements === 0 ? 0 : page * size + 1;
-    const showingTo = Math.min(page * size + size, totalElements);
-    const pageNumbers = getPageNumbers(page, totalPages);
 
     return (
         <Card>
@@ -302,49 +293,15 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                     </Table>
                 </TooltipProvider>
 
-                {/* Pagination */}
-                {totalPages > 0 && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t">
-                        <p className="text-sm text-muted-foreground">
-                            {totalElements === 0 ? 'No results' : `Showing ${showingFrom}–${showingTo} of ${totalElements}`}
-                        </p>
-                        <div className="flex items-center gap-1">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handlePageChange(page - 1)}
-                                disabled={first}
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            {pageNumbers.map((p, i) =>
-                                p === '...' ? (
-                                    <span key={`dots-${i}`} className="px-1 text-muted-foreground text-sm">…</span>
-                                ) : (
-                                    <Button
-                                        key={p}
-                                        variant={p === page ? "default" : "outline"}
-                                        size="icon"
-                                        className="h-8 w-8 text-sm"
-                                        onClick={() => handlePageChange(p as number)}
-                                    >
-                                        {(p as number) + 1}
-                                    </Button>
-                                )
-                            )}
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handlePageChange(page + 1)}
-                                disabled={last}
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                <TablePagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalElements={totalElements}
+                    size={size}
+                    first={first}
+                    last={last}
+                    onPageChange={handlePageChange}
+                />
 
                 {/* View Dialog */}
                 <Dialog open={isViewDialogOpen} onOpenChange={(open) => {

@@ -23,6 +23,7 @@ import { TestPackageListDto, TestPackageDto, TestsResponse, testsApi } from "@/l
 import { SectionTemplateDto } from "@/lib/api/section-templates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
+import { TablePagination } from "@/components/table-pagination";
 import { TestsHeader } from "./tests-header";
 import { format } from "date-fns";
 
@@ -286,27 +287,15 @@ export function TestsTable({ initialData }: TestsTableProps) {
                     </Accordion>
                 )}
 
-                {initialData.totalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={initialData.first}
-                        >
-                            Previous
-                        </Button>
-                        <span className="py-2 px-4">
-                            Page {initialData.page + 1} of {initialData.totalPages}
-                        </span>
-                        <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={initialData.last}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                )}
+                <TablePagination
+                    page={currentPage}
+                    totalPages={initialData.totalPages}
+                    totalElements={initialData.totalElements}
+                    size={initialData.size}
+                    first={initialData.first}
+                    last={initialData.last}
+                    onPageChange={handlePageChange}
+                />
 
                 {/* View Test Details Dialog */}
                 <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>

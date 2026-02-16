@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { Payment, PaymentStatus, PaymentsResponse, paymentsApi } from "@/lib/api/payments";
 import { format } from "date-fns";
+import { TablePagination } from "@/components/table-pagination";
 
 interface PaymentsTableProps {
     initialData: PaymentsResponse;
@@ -212,29 +213,15 @@ export function PaymentsTable({ initialData }: PaymentsTableProps) {
                         </TableBody>
                     </Table>
 
-                    {data.totalPages > 1 && (
-                        <div className="flex justify-center items-center gap-3 mt-6">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 0}
-                            >
-                                Previous
-                            </Button>
-                            <span className="text-sm text-muted-foreground">
-                                Page {currentPage + 1} of {data.totalPages}
-                            </span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage >= data.totalPages - 1}
-                            >
-                                Next
-                            </Button>
-                        </div>
-                    )}
+                    <TablePagination
+                        page={currentPage}
+                        totalPages={data.totalPages}
+                        totalElements={data.totalElements}
+                        size={data.size}
+                        first={data.first}
+                        last={data.last}
+                        onPageChange={handlePageChange}
+                    />
                 </CardContent>
             </Card>
 

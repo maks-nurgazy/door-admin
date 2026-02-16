@@ -45,6 +45,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { TablePagination } from "@/components/table-pagination";
+
+const PAGE_SIZE = 10;
 
 const topicSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(255, "Title must be less than 255 characters"),
@@ -112,11 +115,16 @@ interface TopicsTableProps {
 
 export function TopicsTable({ initialData }: TopicsTableProps) {
     const router = useRouter();
+    const [currentPage, setCurrentPage] = useState(0);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
+
+    const totalElements = initialData.length;
+    const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE));
+    const paginatedData = initialData.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
 
     const form = useForm<TopicFormValues>({
         resolver: zodResolver(topicSchema),
@@ -176,35 +184,45 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Topics Overview</CardTitle>
+            <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                    <CardTitle>Topics Overview</CardTitle>
+                    <span className="text-sm text-muted-foreground">
+                        {totalElements} topic{totalElements !== 1 ? 's' : ''} total
+                    </span>
+                </div>
             </CardHeader>
-            <CardContent>
-                {initialData.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                        No topics found. Create your first topic to get started.
-                    </div>
-                ) : (
-                    <Table>
-                        <TableHeader>
+            <CardContent className="p-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="pl-6">Title</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead className="w-[120px] pr-6 text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedData.length === 0 ? (
                             <TableRow>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="w-[120px]">Actions</TableHead>
+                                <TableCell colSpan={3} className="py-16 text-center">
+                                    <div className="text-muted-foreground text-sm">
+                                        No topics found. Create your first topic to get started.
+                                    </div>
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {initialData.map((topic) => (
-                                <TableRow key={topic.id}>
-                                    <TableCell className="font-medium">{topic.title}</TableCell>
+                        ) : (
+                            paginatedData.map((topic) => (
+                                <TableRow key={topic.id} className="group">
+                                    <TableCell className="pl-6 font-medium">{topic.title}</TableCell>
                                     <TableCell className="text-muted-foreground">
                                         {topic.description || "—"}
                                     </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
+                                    <TableCell className="pr-6">
+                                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
+                                                className="h-8 w-8"
                                                 onClick={() => handleView(topic)}
                                             >
                                                 <Eye className="h-4 w-4" />
@@ -212,6 +230,7 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
+                                                className="h-8 w-8"
                                                 onClick={() => handleEdit(topic)}
                                             >
                                                 <Pencil className="h-4 w-4" />
@@ -219,6 +238,7 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
+                                                className="h-8 w-8"
                                                 onClick={() => handleDelete(topic)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
@@ -226,10 +246,20 @@ export function TopicsTable({ initialData }: TopicsTableProps) {
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+
+                <TablePagination
+                    page={currentPage}
+                    totalPages={totalPages}
+                    totalElements={totalElements}
+                    size={PAGE_SIZE}
+                    first={currentPage === 0}
+                    last={currentPage >= totalPages - 1}
+                    onPageChange={setCurrentPage}
+                />
 
                 {/* Delete Confirmation Dialog */}
                 <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const FILE_SERVICE_URL = process.env.NEXT_PUBLIC_FILE_SERVICE_URL || 'http://localhost:8081';
+const FILE_SERVICE_URL = process.env.NEXT_PUBLIC_FILE_SERVICE_URL || 'http://localhost:8088';
 
 export interface FileUploadResponse {
     url: string;

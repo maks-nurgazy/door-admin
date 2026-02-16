@@ -20,7 +20,7 @@ export function ImageUpload({ value, onChange, onUploading }: ImageUploadProps) 
 
     const testFileService = async () => {
         try {
-            const fileServiceUrl = process.env.NEXT_PUBLIC_FILE_SERVICE_URL || 'http://localhost:8070';
+            const fileServiceUrl = process.env.NEXT_PUBLIC_FILE_SERVICE_URL || 'http://localhost:8088';
             console.log('Testing file service at:', fileServiceUrl);
             
             const response = await fetch(`${fileServiceUrl}/actuator/health`);

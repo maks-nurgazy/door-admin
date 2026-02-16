@@ -4,7 +4,7 @@ import { api } from '@/lib/axios';
 export const s3Api = {
     uploadFile: async (file: File, folder: string = 'questions'): Promise<string> => {
         try {
-            const fileServiceUrl = process.env.NEXT_PUBLIC_FILE_SERVICE_URL || 'http://localhost:8070';
+            const fileServiceUrl = process.env.NEXT_PUBLIC_FILE_SERVICE_URL || 'http://localhost:8088';
             const uploadUrl = `${fileServiceUrl}/files/upload?folder=${folder}&fileName=${file.name}`;
             
             console.log('=== FILE UPLOAD DEBUG ===');

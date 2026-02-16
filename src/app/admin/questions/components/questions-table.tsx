@@ -218,7 +218,7 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                                         <TableRow key={question.id} className="group">
                                             <TableCell className="pl-6">
                                                 <span className={cn(
-                                                    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                                    "inline-flex items-center justify-center min-w-[90px] px-2.5 py-0.5 rounded-full text-xs font-medium",
                                                     typeConfig.color
                                                 )}>
                                                     {typeConfig.label}
@@ -365,7 +365,7 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                                             {(() => {
                                                 const t = TYPE_LABELS[questionDetail.type];
                                                 return (
-                                                    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", t.color)}>
+                                                    <span className={cn("inline-flex items-center justify-center min-w-[90px] px-2.5 py-0.5 rounded-full text-xs font-medium", t.color)}>
                                                         {t.label}
                                                     </span>
                                                 );
@@ -491,7 +491,7 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                                 {(() => {
                                     const t = TYPE_LABELS[selectedQuestion.type];
                                     return (
-                                        <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mr-2", t.color)}>
+                                        <span className={cn("inline-flex items-center justify-center min-w-[90px] px-2.5 py-0.5 rounded-full text-xs font-medium mr-2", t.color)}>
                                             {t.label}
                                         </span>
                                     );

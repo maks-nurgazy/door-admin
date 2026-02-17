@@ -52,6 +52,7 @@ export interface QuestionListDto {
     questionPreview: string | null;
     topics: { id: number; title: string }[];
     sectionName: string | null;
+    testPackage: { id: number; title: string } | null;
     hasPassage: boolean;
     createdAt: string;
     updatedAt: string;
@@ -66,6 +67,7 @@ export interface QuestionResponseDto {
     passage: { id: number; title: string } | null;
     topics: { id: number; title: string }[];
     section: { id: number; name: string } | null;
+    testPackage: { id: number; title: string } | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -76,6 +78,7 @@ export interface CreateQuestionRequest {
     content: QuestionContent;
     explanation?: string;
     passageId?: number;
+    testPackageId?: number;
     sectionId?: number;
     topicIds: number[];
 }

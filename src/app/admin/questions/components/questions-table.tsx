@@ -39,6 +39,7 @@ import {
 } from "@/lib/api/questions";
 import { Topic } from "@/lib/api/topics";
 import { SectionTemplateDto } from "@/lib/api/section-templates";
+import { TestPackageListDto } from "@/lib/api/tests";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { QuestionsHeader } from "./questions-header";
@@ -56,6 +57,7 @@ interface QuestionsTableProps {
     initialData: QuestionsResponse;
     topics: Topic[];
     sections: SectionTemplateDto[];
+    tests: TestPackageListDto[];
 }
 
 const TYPE_LABELS: Record<QuestionType, { label: string; color: string }> = {
@@ -66,7 +68,7 @@ const TYPE_LABELS: Record<QuestionType, { label: string; color: string }> = {
     READING_COMPREHENSION: { label: "Reading", color: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
 };
 
-export function QuestionsTable({ initialData, topics, sections }: QuestionsTableProps) {
+export function QuestionsTable({ initialData, topics, sections, tests }: QuestionsTableProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -422,6 +424,7 @@ export function QuestionsTable({ initialData, topics, sections }: QuestionsTable
                                     question={questionDetail}
                                     topics={topics}
                                     sections={sections}
+                                    tests={tests}
                                     onClose={() => {
                                         setIsEditDialogOpen(false);
                                         setSelectedQuestion(null);

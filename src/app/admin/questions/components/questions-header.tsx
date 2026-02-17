@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { questionsApi, QuestionResponseDto, CreateQuestionRequest } from "@/lib/api/questions";
 import { Topic } from "@/lib/api/topics";
 import { SectionTemplateDto } from "@/lib/api/section-templates";
+import { TestPackageListDto } from "@/lib/api/tests";
 import { QuestionForm, QuestionFormValues } from "./question-form";
 
 interface QuestionsHeaderProps {
@@ -17,9 +18,10 @@ interface QuestionsHeaderProps {
     onSuccess?: () => void;
     topics: Topic[];
     sections: SectionTemplateDto[];
+    tests: TestPackageListDto[];
 }
 
-export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess, topics = [], sections = [] }: QuestionsHeaderProps) {
+export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess, topics = [], sections = [], tests = [] }: QuestionsHeaderProps) {
     const router = useRouter();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -45,6 +47,7 @@ export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess,
                 question={question}
                 topics={topics}
                 sections={sections}
+                tests={tests}
                 onSubmit={handleSubmit}
                 onCancel={onClose!}
             />
@@ -70,6 +73,7 @@ export function QuestionsHeader({ mode = 'create', question, onClose, onSuccess,
                         <QuestionForm
                             topics={topics}
                             sections={sections}
+                            tests={tests}
                             onSubmit={handleSubmit}
                             onCancel={() => setIsAddDialogOpen(false)}
                         />

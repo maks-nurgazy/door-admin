@@ -28,6 +28,7 @@ import {
 } from "@/lib/api/questions";
 import { Topic } from "@/lib/api/topics";
 import { SectionTemplateDto } from "@/lib/api/section-templates";
+import { TestPackageListDto } from "@/lib/api/tests";
 import { TopicSelector } from "./topic-selector";
 import { AnalogyForm } from "./analogy-form";
 import { ComparisonForm } from "./comparison-form";
@@ -51,6 +52,7 @@ const questionSchema = z.object({
     topicIds: z.array(z.number()).min(1, "At least one topic is required"),
     explanation: z.string().optional(),
     passageId: z.number().optional(),
+    testPackageId: z.number().optional(),
     sectionId: z.number().optional(),
 });
 
@@ -61,11 +63,12 @@ interface QuestionFormProps {
     question?: QuestionResponseDto;
     topics: Topic[];
     sections: SectionTemplateDto[];
+    tests: TestPackageListDto[];
     onSubmit: (data: CreateQuestionRequest) => Promise<void>;
     onCancel: () => void;
 }
 
-export function QuestionForm({ mode = 'create', question, topics, sections, onSubmit, onCancel }: QuestionFormProps) {
+export function QuestionForm({ mode = 'create', question, topics, sections, tests, onSubmit, onCancel }: QuestionFormProps) {
     const getTopicIds = (q?: QuestionResponseDto): number[] => {
         if (!q?.topics) return [];
         return q.topics.map(t => t.id);
@@ -106,6 +109,7 @@ export function QuestionForm({ mode = 'create', question, topics, sections, onSu
             topicIds: getTopicIds(question),
             explanation: question.explanation ?? "",
             passageId: question.passage?.id,
+            testPackageId: question.testPackage?.id,
             sectionId: question.section?.id,
         } : {
             questionText: { displayType: 'TEXT', value: "" },
@@ -113,6 +117,7 @@ export function QuestionForm({ mode = 'create', question, topics, sections, onSu
             topicIds: [],
             explanation: "",
             passageId: undefined,
+            testPackageId: undefined,
             sectionId: undefined,
         },
     });
@@ -141,6 +146,7 @@ export function QuestionForm({ mode = 'create', question, topics, sections, onSu
                 content,
                 explanation: data.explanation || undefined,
                 passageId: data.passageId,
+                testPackageId: data.testPackageId,
                 sectionId: data.sectionId,
                 topicIds: data.topicIds,
             };
@@ -176,7 +182,7 @@ export function QuestionForm({ mode = 'create', question, topics, sections, onSu
                 {/* Section 2: Configuration */}
                 <div className="rounded-lg border bg-card p-4 space-y-4">
                     <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Configuration</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                         <FormField
                             control={form.control}
                             name="type"
@@ -199,6 +205,34 @@ export function QuestionForm({ mode = 'create', question, topics, sections, onSu
                                             {getQuestionTypes().map((config) => (
                                                 <SelectItem key={config.type} value={config.type}>
                                                     {config.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="testPackageId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Test</FormLabel>
+                                    <Select
+                                        value={field.value?.toString() ?? "none"}
+                                        onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select test..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="none">No test</SelectItem>
+                                            {tests.map((t) => (
+                                                <SelectItem key={t.id} value={t.id.toString()}>
+                                                    {t.title}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

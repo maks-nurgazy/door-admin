@@ -16,7 +16,7 @@ interface SentenceFormProps {
     onChange: (content: SentenceSubFormData) => void;
 }
 
-const DEFAULT_LABELS = ['A', 'B', 'C', 'D'];
+const DEFAULT_LABELS = ['А', 'Б', 'В', 'Г'];
 
 function makeDefaultOptions(): QuestionOption[] {
     return DEFAULT_LABELS.map((label, i) => ({

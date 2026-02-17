@@ -30,8 +30,8 @@ function makeDefaultOptions(): QuestionOption[] {
     }));
 }
 
-const DEFAULT_COLUMN_A: ComparisonColumn = { label: 'A', value: '', displayType: 'LATEX' };
-const DEFAULT_COLUMN_B: ComparisonColumn = { label: 'B', value: '', displayType: 'LATEX' };
+const DEFAULT_COLUMN_A: ComparisonColumn = { label: 'А', value: '', displayType: 'LATEX' };
+const DEFAULT_COLUMN_B: ComparisonColumn = { label: 'Б', value: '', displayType: 'LATEX' };
 
 export function ComparisonForm({ content, onChange }: ComparisonFormProps) {
     const [columnA, setColumnA] = useState<ComparisonColumn>(
